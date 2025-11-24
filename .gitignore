@@ -1,0 +1,4 @@
+*.bin
+*.vcd
+*.txt
+obj_dir/

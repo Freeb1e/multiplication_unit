@@ -105,7 +105,7 @@ print("-" * 50)
 debug_file_mod = 'debug_trace_C00_mod_step.txt'
 
 row_vec = A_buffer[0, :].astype(np.uint64)
-col_vec = S[:, 3].astype(np.uint64) # 取 S 的第0列，这在 bin 文件中是存储在最开头的那一段数据
+col_vec = S[:, 0].astype(np.uint64) # 取 S 的第0列，这在 bin 文件中是存储在最开头的那一段数据
 
 accumulator_16bit = 0
 common_dim_len = len(row_vec)
@@ -119,14 +119,25 @@ with open(debug_file_mod, 'w') as f:
     f.write("-" * len(header) + "\n")
     
     for k in range(common_dim_len):
-        val_a = row_vec[k]
-        val_s = col_vec[k]
-        product = val_a * val_s
+        # [关键修复] 显式转换为 Python int，消除 NumPy 类型或浮点数歧义
+        val_a = int(row_vec[k])
+        val_s = int(col_vec[k])
+        
+        # 即使这里是整数乘法，Python 某些环境可能在极端情况下行为不同
+        # 显式转换保证它是 int
+        product = int(val_a * val_s)
+        
+        # 计算累加
         accumulator_16bit = (accumulator_16bit + product) % mod_mask
         
+        # 强制转换为 int 再次确保格式化安全
+        acc_val = int(accumulator_16bit)
+        
+        # 现在所有变量都是纯粹的 Python int，':d' 格式化符绝对安全
         line = (f"{k:<6d} | {val_a:<6d} | {val_s:<6d} | "
-                f"{product:<12d} | {accumulator_16bit:<10d} | {accumulator_16bit:04X}")
+                f"{product:<12d} | {acc_val:<10d} | {acc_val:04X}")
         f.write(line + "\n")
 
 print(f"✅ 调试日志已保存到: '{debug_file_mod}'")
 print(f"   验证: Bin文件中 S 的前 {common_dim_len} 个字节对应 S[0..1343, 0]")
+print("所有任务完成。")

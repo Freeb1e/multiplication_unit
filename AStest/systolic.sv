@@ -27,7 +27,7 @@ module systolic_top#(
     always_comb begin
         for (int k = 0; k < SYSTOLIC_WIDTH; k = k + 1) begin
             // assign each SUM_WIDTH-bit slot from LSB upward
-            sum_out[ (SYSTOLIC_WIDTH - 1 - k) * SUM_WIDTH +: SUM_WIDTH ] = sum_array[SYSTOLIC_WIDTH-1][k];
+            sum_out[ (SYSTOLIC_WIDTH - 1 - k) * SUM_WIDTH +: SUM_WIDTH ] = sum_array[SYSTOLIC_WIDTH-1][SYSTOLIC_WIDTH-1 - k];
         end
     end
     always_ff@(posedge clk or negedge rst_n)begin

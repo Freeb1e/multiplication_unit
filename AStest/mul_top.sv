@@ -11,7 +11,13 @@ module mul_top(
 
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
-        output logic [31:0] addr_HASH
+        output logic [31:0] addr_HASH,
+        output logic wen_sp,
+        output logic wen_dp,
+        output logic wen_HASH,
+        output logic [63:0] bram_wdata_sp,
+        output logic [63:0] bram_wdata_dp,
+        output logic [63:0] bram_wdata_HASH
     );
     logic [63:0] data_left;
     logic [63:0] data_right;
@@ -47,7 +53,11 @@ module mul_top(
                  .addr_HASH      	(addr_HASH       ),
                  .transposition_slect  (transposition_slect    ),
                  .systolic_state   	(systolic_state     ),
-                 .systolic_mode   	(systolic_mode)
+                 .systolic_mode   	(systolic_mode),
+                 .data_adder     	(data_adder),
+                 .wen_sp         	(wen_sp          ),
+                 .wen_dp         	(wen_dp          ),
+                 .wen_HASH       	(wen_HASH)
              );
 
     // 左矩阵转置器
@@ -151,5 +161,29 @@ module mul_top(
                      .mode       	(systolic_mode        ),
                      .state      	(systolic_state       )
                  );
-
+    //加法器
+    wire [16-1:0] sum1;
+    wire [16-1:0] sum2;
+    wire [16-1:0] sum3;
+    wire [16-1:0] sum4;
+    logic [4*16-1:0] data_adder;
+    Adder_4 #(
+                .DATA_WIDTH 	(16  ))
+            u_Adder_4(
+                .a1   	(sum_out[16*1-1:16*0]   ),
+                .a2   	(sum_out[16*2-1:16*1]   ),
+                .a3   	(sum_out[16*3-1:16*2]   ),
+                .a4   	(sum_out[16*4-1:16*3]   ),
+                .b1   	(data_adder[16*1-1:16*0] ),
+                .b2   	(data_adder[16*2-1:16*1] ),
+                .b3   	(data_adder[16*3-1:16*2] ),
+                .b4   	(data_adder[16*4-1:16*3] ),
+                .sum1 	(sum1  ),
+                .sum2 	(sum2  ),
+                .sum3 	(sum3  ),
+                .sum4 	(sum4  )
+            );
+    always_comb begin
+        bram_wdata_sp = {sum4, sum3, sum2, sum1};
+    end
 endmodule

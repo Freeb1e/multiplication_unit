@@ -16,7 +16,7 @@ public:
     ~RamModel();
 
     bool init_from_bin(const std::string &filename);
-
+    void dump_to_txt(const std::string &filename);
     /**
      * @brief 只有在时钟上升沿才会更新读/写
      * * @param clk   时钟

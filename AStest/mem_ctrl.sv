@@ -152,7 +152,7 @@ module mem_ctrl(
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             cnt_8<='b0;
-        end else if(cnt_line == 338 && count_4 == 2) begin
+        end else if(cnt_line == 338 && count_4 == 3) begin
             cnt_8 <='b1;
         end else if(cnt_8 == 3'd7) begin
             cnt_8 <= 3'd0;
@@ -164,7 +164,7 @@ module mem_ctrl(
     assign half_flag = cnt_result_block[0];
     //地址产生
     parameter Frodo_standard_A = 32'd1344*16,Frodo_standard_SE=32'd1344*8;
-    parameter BASEADDR_B = 32'd0;
+    parameter BASEADDR_B = 32'd1344*8*8;
     logic [1:0] save_bias;
     assign save_bias = 2'b11 - cnt_8[2:1];
     always_comb begin
@@ -178,7 +178,7 @@ module mem_ctrl(
                 addr_sp = cnt_line*32'd32+count_4*Frodo_standard_SE+((half_flag)?(4*Frodo_standard_SE):32'd0);
             end else if(current_state == AS_SAVE) begin
                 /* verilator lint_off WIDTHEXPAND */
-                addr_sp = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+save_bias*16*8;
+                addr_sp = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+save_bias*16*4;
                 /* verilator lint_on WIDTHEXPAND */
                 data_adder = bram_data_sp;
                 addr_HASH=1;

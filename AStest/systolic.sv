@@ -109,20 +109,26 @@ module systolic_pe#(
     input logic mode,//mode 1：输出固定 mode 0：权重固定
     input logic state//state 0：数据传输  state 1：计算
 );
+    logic clk_div;
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             a_reg<= '0;
             b_reg<= '0;
             sum_out<= '0;
+            clk_div<= '0;
         end if(mode==1'b1)begin
             if(state==1'b1)begin
                 a_reg<= a_wire;
                 b_reg<= b_wire;
                 sum_out<= sum_out + a_wire* b_wire;
+                clk_div<= 1'b0;
             end else begin
-                a_reg<= a_wire;
-                b_reg<= b_wire;
-                sum_out<= sum_wire;
+                clk_div <= ~clk_div;
+                if(clk_div == 1'b0) begin
+                    a_reg<= a_wire;
+                    b_reg<= b_wire;
+                    sum_out<= sum_wire;
+                end 
             end
         end else begin
             if(state==1'b0)begin

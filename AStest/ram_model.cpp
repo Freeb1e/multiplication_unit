@@ -1,7 +1,7 @@
 #include "ram_model.hpp"
 #include <fstream>
 #include <iostream>
-
+#include <iomanip>
 RamModel::RamModel() : last_clk(false), output_reg(0) {
     memory.resize(1024, 0);
 }
@@ -60,6 +60,48 @@ uint64_t RamModel::eval(bool clk, uint64_t addr, bool wen, uint64_t wdata) {
     // 任何时候都返回寄存器里的值
     // 如果不在上升沿，这里返回的就是上一次锁存的值
     return output_reg;
+}
+void RamModel::dump_to_txt(const std::string &filename) {
+    std::ofstream outfile(filename);
+    
+    if (!outfile.is_open()) {
+        std::cerr << "[RamModel] Error: Cannot create output file " << filename << std::endl;
+        return;
+    }
+
+    // 打印表头
+    // Layout: 地址 | 64位十六进制 | 拆分的4个16位十进制 | 完整十进制
+    outfile << "Addr | Data (Hex 64-bit)    | Split Dec (16-bit: Low->High)      | Full Dec" << std::endl;
+    outfile << "-----|----------------------|------------------------------------|---------" << std::endl;
+
+    for (size_t i = 0; i < memory.size(); ++i) {
+        uint64_t raw = memory[i];
+
+        // --- 核心逻辑: 拆分 64 位为 4 个 16 位 ---
+        uint16_t v0 = raw & 0xFFFF;          // [15:0]
+        uint16_t v1 = (raw >> 16) & 0xFFFF;  // [31:16]
+        uint16_t v2 = (raw >> 32) & 0xFFFF;  // [47:32]
+        uint16_t v3 = (raw >> 48) & 0xFFFF;  // [63:48]
+
+        // 1. 地址
+        outfile << std::dec << std::setw(4) << std::setfill('0') << i << " | ";
+        
+        // 2. 64位十六进制数据
+        outfile << "0x" << std::hex << std::setw(16) << std::setfill('0') << raw << " | ";
+        
+        // 3. 拆分后的十进制数据 (这里用空格填充，方便阅读)
+        outfile << std::dec << std::setfill(' ');
+        outfile << std::setw(5) << v0 << ", "
+                << std::setw(5) << v1 << ", "
+                << std::setw(5) << v2 << ", "
+                << std::setw(5) << v3 << " | ";
+
+        // 4. 完整十进制数据 (可选)
+        outfile << raw << std::endl;
+    }
+
+    outfile.close();
+    std::cout << "[RamModel] Memory dumped to " << filename << std::endl;
 }
 
 // ============================================================

@@ -4,7 +4,7 @@ import os
 # --- 1. 定义矩阵维度 ---
 ROWS_A_BUFF = 4
 COMMON_DIM = 1344
-COLS_S = 4  # S 的列数
+COLS_S = 8  # S 的列数
 
 # --- 2. 定义数据类型 (DTypes) ---
 DTYPE_A = np.uint16  # A_buffer 是 16-bit

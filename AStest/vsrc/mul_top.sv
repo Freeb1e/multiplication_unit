@@ -17,7 +17,8 @@ module mul_top(
         output logic wen_HASH,
         output logic [63:0] bram_wdata_sp,
         output logic [63:0] bram_wdata_dp,
-        output logic [63:0] bram_wdata_HASH
+        output logic [63:0] bram_wdata_HASH,
+        input logic HASH_ready
     );
     logic [63:0] data_left;
     logic [63:0] data_right;
@@ -57,7 +58,8 @@ module mul_top(
                  .data_adder     	(data_adder),
                  .wen_sp         	(wen_sp          ),
                  .wen_dp         	(wen_dp          ),
-                 .wen_HASH       	(wen_HASH)
+                 .wen_HASH       	(wen_HASH),
+                 .HASH_ready     	(HASH_ready      )
              );
 
     // 左矩阵转置器

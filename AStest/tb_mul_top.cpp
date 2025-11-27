@@ -31,7 +31,7 @@ int main(int argc, char **argv, char **env)
     RamModel ram_sp_second;
     ram_HASH.init_from_bin("A_buffer.bin");
     ram_sp.init_from_bin("S.bin");
-    ram_sp_second.init_from_bin("B_matrix.bin");
+    ram_sp_second.init_from_bin("B_matrix0.bin");
     dut->rst_n = 0;
     dut->calc_init = 0;
     dut->mem_mode = 0;
@@ -66,7 +66,8 @@ int main(int argc, char **argv, char **env)
         //               << val0 << ", " << val1 << ", " << val2 << ", " << val3 
         //               << std::endl;
         // }
-        if(sim_time==2800)ram_sp_second.dump_to_txt("B_matrix_out.txt");
+        if(sim_time==2800*2)ram_sp_second.dump_to_txt("B_matrix_out.txt");
+        //if(sim_time==2750)dut->HASH_ready=1;
         dut->eval();
         m_trace->dump(sim_time);
         sim_time++;

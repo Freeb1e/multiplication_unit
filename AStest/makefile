@@ -1,9 +1,9 @@
 .PHONY: build run RUN clean
-VERILOG=$(wildcard *.sv)
+VERILOG=$(wildcard vsrc/*.sv)
 CSOURCE=$(wildcard *.cpp)
 
 build:
-	clear
+# 	clear
 	verilator --trace -cc $(VERILOG) --exe $(CSOURCE) --top-module mul_top -Mdir obj_dir
 	$(MAKE) -C obj_dir -f Vmul_top.mk Vmul_top
 

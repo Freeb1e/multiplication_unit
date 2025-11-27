@@ -17,7 +17,8 @@ module mem_ctrl(
         output logic [63:0] data_adder,
         output logic wen_sp,
         output logic wen_dp,
-        output logic wen_HASH
+        output logic wen_HASH,
+        input logic HASH_ready
     );
 
     parameter IDLE=3'd0,AS=3'd1,SA=3'd2,SB=3'd3,BS=3'd4;
@@ -26,8 +27,9 @@ module mem_ctrl(
     logic [1:0] count_4;
     logic [31:0] cnt_line;
     logic half_flag;
+    logic block_init;
     //矩阵计算内部状态机
-    parameter FREE=3'd0,AS_SQUARE=3'd1,AS_SAVE=3'd2;
+    parameter FREE=3'd0,AS_SQUARE=3'd1,AS_SAVE=3'd2,AS_WAITHASH=3'd3;
     logic [2:0] current_state,next_state;
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -56,7 +58,18 @@ module mem_ctrl(
                 end
             end
             AS_SAVE: begin
-                next_state=AS_SAVE;
+                if(cnt_line == 32'd340 && count_4==2'b11) begin
+                    next_state=AS_WAITHASH;
+                end
+                else next_state=AS_SAVE;
+            end
+            AS_WAITHASH: begin
+                if(HASH_ready || cnt_result_block[0]) begin
+                    next_state=AS_SQUARE;
+                end
+                else begin
+                    next_state=AS_WAITHASH;
+                end
             end
             default: begin
                 next_state=FREE;
@@ -68,6 +81,19 @@ module mem_ctrl(
         data_ctrl_right=(current_state==AS_SQUARE)?1'b1:1'b0;
     end
 
+    always_ff@(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            block_init <= 1'b0;
+        end
+        else begin
+            if(current_state==AS_WAITHASH && next_state==AS_SQUARE) begin
+                block_init <= 1'b1;
+            end
+            else begin
+                block_init <= 1'b0;
+            end
+        end
+    end
     //矩阵格式载入
     always_ff @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -93,7 +119,7 @@ module mem_ctrl(
             count_4<='b0;
         end
         else begin
-            if(calc_init) begin
+            if(calc_init || block_init) begin
                 count_4<='b0;
             end
             else begin
@@ -107,12 +133,12 @@ module mem_ctrl(
             cnt_line<='b0;
         end
         else begin
-            if(calc_init) begin
+            if(calc_init || block_init) begin
                 cnt_line<='b0;
             end
             else begin
                 if(count_4==2'b11) begin
-                    if(cnt_line==32'd339)
+                    if(cnt_line==32'd340)
                         cnt_line<=32'b0;
                     else
                         cnt_line<=cnt_line+32'b1;
@@ -142,7 +168,7 @@ module mem_ctrl(
         end else if(calc_init) begin
             cnt_result_block<='b0;
         end else begin
-            if(current_state==AS_SAVE && next_state == AS_SQUARE) begin
+            if(current_state==AS_SAVE && next_state == AS_WAITHASH) begin
                     cnt_result_block<=cnt_result_block+10'b1;
             end
         end
@@ -177,9 +203,9 @@ module mem_ctrl(
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
                 addr_sp = cnt_line*32'd32+count_4*Frodo_standard_SE+((half_flag)?(4*Frodo_standard_SE):32'd0);
             end else if(current_state == AS_SAVE) begin
-                /* verilator lint_off WIDTHEXPAND */
-                addr_sp = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+save_bias*16*4;
-                /* verilator lint_on WIDTHEXPAND */
+                /* verilator lint_off WIDTH */
+                addr_sp = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+save_bias*16*8;
+                /* verilator lint_on WIDTH */
                 data_adder = bram_data_sp;
                 addr_HASH=1;
             end

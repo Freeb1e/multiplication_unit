@@ -11,6 +11,7 @@ module mem_ctrl(
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
         output logic [31:0] addr_HASH,
+        output logic [31:0] addr_sp_w,
         output logic transposition_slect,
         output logic systolic_state,
         output logic systolic_mode,
@@ -18,6 +19,7 @@ module mem_ctrl(
         output logic wen_sp,
         output logic wen_dp,
         output logic wen_HASH,
+        output logic wen_sp_2,
         input logic HASH_ready,
         output logic [3:0] current_state
     );

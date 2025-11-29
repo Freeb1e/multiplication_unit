@@ -12,12 +12,13 @@ module mul_top(
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
         output logic [31:0] addr_HASH,
-        output logic [31:0] addr_sp_w,
+        output logic [31:0] addr_sp_2,
         output logic wen_sp,
         output logic wen_dp,
         output logic wen_HASH,
         output logic wen_sp_2,
         output logic [63:0] bram_wdata_sp,
+        output logic [63:0] bram_wdata_sp_2,
         output logic [63:0] bram_wdata_dp,
         output logic [63:0] bram_wdata_HASH,
         input logic HASH_ready
@@ -66,7 +67,7 @@ module mul_top(
                  .wen_HASH       	(wen_HASH),
                  .HASH_ready     	(HASH_ready      ),
                  .current_state  	(current_state   ),
-                 .addr_sp_w      	(addr_sp_w       ),
+                 .addr_sp_2      	(addr_sp_2       ),
                  .wen_sp_2       	(wen_sp_2        )
              );
 
@@ -205,9 +206,11 @@ module mul_top(
                 .sum1 	(sum1  ),
                 .sum2 	(sum2  ),
                 .sum3 	(sum3  ),
-                .sum4 	(sum4  )
+                .sum4 	(sum4  ),
+                .clk   	(clk    ),
+                .rst_n 	(rst_n  )
             );
     always_comb begin
-        bram_wdata_sp = {sum4, sum3, sum2, sum1};
+        bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
     end
 endmodule

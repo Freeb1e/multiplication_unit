@@ -13,9 +13,20 @@ module Adder_4#(
     output logic [DATA_WIDTH-1:0] sum2,
     output logic [DATA_WIDTH-1:0] sum3,
     output logic [DATA_WIDTH-1:0] sum4
+    , input logic clk,
+    input logic rst_n
 );
-    assign sum1 = a1 + b1;
-    assign sum2 = a2 + b2;
-    assign sum3 = a3 + b3;
-    assign sum4 = a4 + b4;
+always_ff @(posedge clk or negedge rst_n) begin
+        if (!rst_n) begin
+                sum1 <= '0;
+                sum2 <= '0;
+                sum3 <= '0;
+                sum4 <= '0;
+        end else begin
+                sum1 <= a1 + b1;
+                sum2 <= a2 + b2;
+                sum3 <= a3 + b3;
+                sum4 <= a4 + b4;
+        end
+end
 endmodule 

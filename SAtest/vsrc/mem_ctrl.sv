@@ -11,7 +11,7 @@ module mem_ctrl(
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
         output logic [31:0] addr_HASH,
-        output logic [31:0] addr_sp_w,
+        output logic [31:0] addr_sp_2,
         output logic transposition_slect,
         output logic systolic_state,
         output logic systolic_mode,
@@ -240,22 +240,7 @@ module mem_ctrl(
             end
         end
     end
-    //存储时序状态计数器
-    logic [2:0] cnt_8;
-    always_ff@(posedge clk or negedge rst_n) begin
-        if(!rst_n) begin
-            cnt_8<='b0;
-        end
-        else if(cnt_line == 338 && count_4 == 3) begin
-            cnt_8 <='b1;
-        end
-        else if(cnt_8 == 3'd7) begin
-            cnt_8 <= 3'd0;
-        end
-        else if (cnt_8 != 3'd0) begin
-            cnt_8 <= cnt_8 + 3'd1;
-        end
-    end
+
     //左乘情况下向右移动的计数器
     logic [8:0] cnt_line_left;
     always_ff@(posedge clk or negedge rst_n) begin
@@ -277,13 +262,18 @@ module mem_ctrl(
     //地址产生
     parameter Frodo_standard_A = 32'd1344*16,Frodo_standard_SE=32'd1344*8;
     parameter BASEADDR_B = 32'd1344*8*8;
-    logic [1:0] save_bias;
-    assign save_bias = 2'b11 - cnt_8[2:1];
+    logic [1:0] save_bias,save_bias_w;
+    assign save_bias = 2'b10 - count_4;
+    assign save_bias_w = save_bias+2'd2;
+    logic [31:0] debug_addr_w,debug_addr_r;
+    assign debug_addr_w = addr_sp_2-BASEADDR_B;
+    assign debug_addr_r = addr_sp-BASEADDR_B;
     always_comb begin
         data_adder = 64'd0;
         addr_dp = 32'd0;
         addr_sp = 32'd0;
         addr_HASH = 32'd0;
+        addr_sp_2 = 32'd0;
         if(mode==AS) begin
             if(current_state==AS_SQUARE) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
@@ -292,6 +282,7 @@ module mem_ctrl(
             else if(current_state == AS_SAVE) begin
                 /* verilator lint_off WIDTH */
                 addr_sp = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+save_bias*16*8;
+                addr_sp_2 = BASEADDR_B + (cnt_result_block>>1)*16*32+cnt_result_block[0]*64+(save_bias_w)*16*8;
                 /* verilator lint_on WIDTH */
                 data_adder = bram_data_sp;
                 addr_HASH=1;
@@ -331,9 +322,10 @@ module mem_ctrl(
         wen_sp = 1'b0;
         wen_dp=0;
         wen_HASH=0;
+        wen_sp_2=0;
         if(mode==AS) begin
             if(current_state==AS_SAVE) begin
-                wen_sp = cnt_8[0];
+                wen_sp_2 =(cnt_line==32'd339 && count_4>0)||(cnt_line == 32'd340 && count_4 == 0)? 1'b1 : 1'b0;
             end
         end
     end

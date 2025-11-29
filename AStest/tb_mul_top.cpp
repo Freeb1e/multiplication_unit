@@ -31,7 +31,7 @@ int main(int argc, char **argv, char **env)
     RamModel ram_sp_second;
     ram_HASH.init_from_bin("A_buffer.bin");
     ram_sp.init_from_bin("S.bin");
-    ram_sp_second.init_from_bin("B_matrix0.bin");
+    ram_sp_second.init_from_bin("B_matrix.bin");
     dut->rst_n = 0;
     dut->calc_init = 0;
     dut->mem_mode = 0;

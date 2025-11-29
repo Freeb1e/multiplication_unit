@@ -123,12 +123,9 @@ module systolic_pe#(
                 sum_out<= sum_out + a_wire* b_wire;
                 
             end else begin
-                
-                
                     a_reg<= a_wire;
                     b_reg<= b_wire;
-                    sum_out<= sum_wire;
-                 
+                    sum_out<= sum_wire;   
             end
         end else begin
             if(state==1'b0)begin

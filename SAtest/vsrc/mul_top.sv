@@ -166,6 +166,10 @@ module mul_top(
             a_in_raw = 64'd0 ;
             b_in_raw = b_mult_in;
         end
+        SA_calculate:begin
+            a_in_raw = data_left;
+            b_in_raw = 0;
+        end
         default: begin
             a_in_raw = 64'd0 ;
             b_in_raw = b_mult_in;

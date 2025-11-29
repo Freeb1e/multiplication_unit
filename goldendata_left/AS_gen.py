@@ -63,8 +63,8 @@ print(f"  C_result.shape: {C_result.shape}")
 # ==========================================================
 # --- 5. 生成机器文件 (.bin) ---
 # ==========================================================
-file_A = 'A_full_1344x1344.bin'
-file_S = 'S_transposed_8x1344.bin' # 文件名注明了实际存储结构
+file_A = 'A_full.bin'
+file_S = 'S_tr.bin' # 文件名注明了实际存储结构
 file_C = 'C_full_1344x8.bin'
 
 print(f"\n--- 保存二进制文件 (.bin) ---")

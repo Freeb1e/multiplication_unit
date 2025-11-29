@@ -29,10 +29,10 @@ int main(int argc, char **argv, char **env)
     RamModel ram_HASH;
     RamModel ram_sp;
     RamModel ram_sp_second;
-    // ram_HASH.init_from_bin("A_full.bin");
-    // ram_sp.init_from_bin("S_tr.bin");
-    ram_HASH.init_from_bin("A_buffer.bin");
-    ram_sp.init_from_bin("S.bin");
+    ram_HASH.init_from_bin("A_full.bin");
+    ram_sp.init_from_bin("S_tr.bin");
+    // ram_HASH.init_from_bin("A_buffer.bin");
+    // ram_sp.init_from_bin("S.bin");
     ram_sp_second.init_from_bin("B_matrix.bin");
     dut->rst_n = 0;
     dut->calc_init = 0;
@@ -40,7 +40,7 @@ int main(int argc, char **argv, char **env)
     tick();
     dut->rst_n = 1;
     dut->calc_init = 1;
-    dut->mem_mode = 1;
+    dut->mem_mode = 2;
     tick();
     dut->calc_init = 0;
     while (sim_time < MAX_SIM_TIME)

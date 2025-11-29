@@ -87,7 +87,10 @@ module mem_ctrl(
                 end
             end
             SA_loadweight_mid:begin
-                next_state=DEBUG;
+                next_state=SA_calculate;
+            end
+            SA_calculate:begin
+                next_state=SA_calculate;
             end
             DEBUG: begin
                 next_state=DEBUG;
@@ -104,8 +107,12 @@ module mem_ctrl(
                 data_ctrl_right=1'b1;
             end
             SA_loadweight1,SA_loadweight_mid:begin
-                data_ctrl_left=1'b1;
+                data_ctrl_left=1'b0;
                 data_ctrl_right=1'b1;
+            end
+            SA_calculate: begin
+                data_ctrl_left=1'b1;
+                data_ctrl_right=1'b0;
             end
             DEBUG: begin
                 data_ctrl_left=1'b1;
@@ -133,7 +140,9 @@ module mem_ctrl(
         else begin
             if(current_state==AS_WAITHASH && next_state==AS_SQUARE) begin
                 block_init <= 1'b1;end
-            else begin
+            else if(current_state==SA_loadweight1 && next_state == SA_calculate) begin
+                block_init <= 1'b1;
+            end else begin
                 block_init <= 1'b0;
             end
         end
@@ -187,7 +196,7 @@ module mem_ctrl(
                 count_4<='b0;
             end
             else begin
-                 if(mode ==AS || current_state==SA_loadweight1 || current_state==SA_loadweight2)
+                 if(mode ==AS || current_state==SA_loadweight1 || current_state==SA_loadweight2 || current_state==SA_calculate)
                 count_4<=count_4+2'b1;
             end
         end
@@ -200,8 +209,9 @@ module mem_ctrl(
         else begin
             if(calc_init || block_init) begin
                 cnt_line<='b0;
-            end
-            else begin
+            end if(current_state==SA_loadweight1 && next_state==SA_loadweight_mid) begin
+                cnt_line<='b0;
+            end else begin
                 if(count_4==2'b11) begin
                     if(cnt_line==32'd340)
                         cnt_line<=32'b0;
@@ -293,6 +303,8 @@ module mem_ctrl(
                 /* verilator lint_off WIDTH */
                 addr_sp = cnt_line_left*32'd64+(3-count_4)*Frodo_standard_SE;
                 /* verilator lint_on WIDTH */
+            end else if(current_state == SA_calculate)begin
+                addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
             end
         end
     end
@@ -307,9 +319,13 @@ module mem_ctrl(
                 data_left = 64'd0;
                 data_right = (data_ctrl_right)? bram_data_sp:64'd0;
             end
+            SA_calculate: begin
+                data_left = (data_ctrl_left)? bram_data_HASH:64'd0;
+                data_right = 64'd0;
+            end
             DEBUG: begin
-                data_left = 64'd0;
-                data_right = (data_ctrl_right)? bram_data_sp:64'd0;
+                data_left = (data_ctrl_right)? bram_data_sp:64'd0;
+                data_right = 64'd0;
             end
             default: begin
                 data_left = 64'd0;

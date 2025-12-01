@@ -7,9 +7,14 @@ build:
 	verilator --trace -cc $(VERILOG) --exe $(CSOURCE) --top-module mul_top -Mdir obj_dir
 	$(MAKE) -C obj_dir -f Vmul_top.mk Vmul_top
 
+buildtest:
+	verilator -CFLAGS "-DAS_TEST" --trace -cc $(VERILOG) --exe $(CSOURCE) --top-module mul_top -Mdir obj_dir   
+	$(MAKE) -C obj_dir -f Vmul_top.mk Vmul_top
+
 run: build
 	./obj_dir/Vmul_top
-
+test: buildtest
+	./obj_dir/Vmul_top
 RUN: run
 
 see:

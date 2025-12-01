@@ -1,17 +1,18 @@
 module systolic_top#(
-    parameter DATA_WIDTH = 16,
-              SUM_WIDTH = 16,
-              SYSTOLIC_WIDTH = 4
-)(
-    input logic clk,
-    input logic rst_n,
-    input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] a_in_raw,
-    input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] b_in_raw,
-    input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] sum_in_raw,
-    output logic [SYSTOLIC_WIDTH*SUM_WIDTH-1:0] sum_out,
-    input logic mode,//mode 1：输出固定 mode 0：权重固定
-    input logic state//state 0：数据传输  state 1：计算
-);
+        parameter DATA_WIDTH = 16,
+        SUM_WIDTH = 16,
+        SYSTOLIC_WIDTH = 4
+    )(
+        input logic clk,
+        input logic rst_n,
+        input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] a_in_raw,
+        input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] b_in_raw,
+        input logic [SYSTOLIC_WIDTH*DATA_WIDTH-1:0] sum_in_raw,
+        output logic [SYSTOLIC_WIDTH*SUM_WIDTH-1:0] sum_out,
+        input logic mode,//mode 1：输出固定 mode 0：权重固定
+        input logic state,//state 0：数据传输  state 1：计算
+        input logic enable
+    );
     logic [DATA_WIDTH-1:0] sum_array [0:SYSTOLIC_WIDTH-1][0:SYSTOLIC_WIDTH-1];
     logic [DATA_WIDTH-1:0] a_reg_array [0:SYSTOLIC_WIDTH-1][0:SYSTOLIC_WIDTH-1];
     logic [DATA_WIDTH-1:0] b_reg_array [0:SYSTOLIC_WIDTH-1][0:SYSTOLIC_WIDTH-1];
@@ -30,12 +31,13 @@ module systolic_top#(
             sum_out[ (SYSTOLIC_WIDTH - 1 - k) * SUM_WIDTH +: SUM_WIDTH ] = sum_array[SYSTOLIC_WIDTH-1][SYSTOLIC_WIDTH-1 - k];
         end
     end
-    always_ff@(posedge clk or negedge rst_n)begin
-        if(!rst_n)begin
+    always_ff@(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
             a_in <= '0;
             b_in <= '0;
             sum_in <= '0;
-        end else begin
+        end
+        else begin
             a_in <= a_in_raw;
             b_in <= b_in_raw;
             sum_in <= sum_in_raw;
@@ -86,53 +88,60 @@ module systolic_top#(
                                 .sum_out(sum_array[i][j]),
                                 .sum_wire((i == 0) ? sum_in[(j+1)*SUM_WIDTH-1:j*SUM_WIDTH] : sum_array[i-1][j]),
                                 .mode(mode),
-                                .state(state)
+                                .state(state),
+                                .enable(enable)
                             );
             end
         end
     endgenerate
-endmodule 
+endmodule
 
 
 module systolic_pe#(
-    parameter DATA_WIDTH = 16,
-              SUM_WIDTH = 16
-)(
-    input logic clk,
-    input logic rst_n,
-    input logic [DATA_WIDTH-1:0] a_wire,
-    input logic [DATA_WIDTH-1:0] b_wire,
-    input logic [SUM_WIDTH-1:0] sum_wire,
-    output logic [SUM_WIDTH-1:0] sum_out,
-    output logic [DATA_WIDTH-1:0] a_reg,
-    output logic [DATA_WIDTH-1:0] b_reg,
-    input logic mode,//mode 1：输出固定 mode 0：权重固定
-    input logic state//state 0：数据传输  state 1：计算
-);
-    
+        parameter DATA_WIDTH = 16,
+        SUM_WIDTH = 16
+    )(
+        input logic clk,
+        input logic rst_n,
+        input logic [DATA_WIDTH-1:0] a_wire,
+        input logic [DATA_WIDTH-1:0] b_wire,
+        input logic [SUM_WIDTH-1:0] sum_wire,
+        output logic [SUM_WIDTH-1:0] sum_out,
+        output logic [DATA_WIDTH-1:0] a_reg,
+        output logic [DATA_WIDTH-1:0] b_reg,
+        input logic mode,//mode 1：输出固定 mode 0：权重固定
+        input logic state,//state 0：数据传输  state 1：计算
+        input logic enable
+    );
+
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             a_reg<= '0;
             b_reg<= '0;
             sum_out<= '0;
-            
-        end if(mode==1'b1)begin
-            if(state==1'b1)begin
-                a_reg<= a_wire;
-                b_reg<= b_wire;
-                sum_out<= sum_out + a_wire* b_wire;
-                
-            end else begin
+        end
+        if(enable) begin
+            if(mode==1'b1) begin
+                if(state==1'b1) begin
                     a_reg<= a_wire;
                     b_reg<= b_wire;
-                    sum_out<= sum_wire;   
+                    sum_out<= sum_out + a_wire* b_wire;
+
+                end
+                else begin
+                    a_reg<= a_wire;
+                    b_reg<= b_wire;
+                    sum_out<= sum_wire;
+                end
             end
-        end else begin
-            if(state==1'b0)begin
-                b_reg<= b_wire;
-            end else begin
-                a_reg<= a_wire;
-                sum_out<= sum_wire + a_wire* b_reg;
+            else begin
+                if(state==1'b0) begin
+                    b_reg<= b_wire;
+                end
+                else begin
+                    a_reg<= a_wire;
+                    sum_out<= sum_wire + a_wire* b_reg;
+                end
             end
         end
     end
@@ -164,7 +173,7 @@ module delay_reg#(
                 shift_reg[i] <= shift_reg[i-1];
             end
         end
-        
+
     end
     assign dout = (delay_switch)? shift_reg[DELAY_CYCLES-1]:din;
 endmodule

@@ -38,6 +38,7 @@ module mul_top(
     parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate=4'd6,SA_WAITHASH=4'd7;
     parameter DEBUG=4'd15;
     logic transposition_dir;
+    logic systolic_enable;
     mem_ctrl #(
                  .IDLE              	(0   ),
                  .AS                	(1   ),
@@ -70,7 +71,8 @@ module mul_top(
                  .current_state  	(current_state   ),
                  .addr_sp_2      	(addr_sp_2       ),
                  .wen_sp_2       	(wen_sp_2        ),
-                 .transposition_dir (transposition_dir)
+                 .transposition_dir (transposition_dir),
+                 .systolic_enable     (systolic_enable)
              );
 
     // 左矩阵转置器
@@ -173,7 +175,7 @@ module mul_top(
             b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
         end
         SA_calculate:begin
-            a_in_raw = data_left;
+            a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
             b_in_raw = 0;
         end
         default: begin
@@ -194,7 +196,8 @@ module mul_top(
                      .sum_in_raw 	(sum_in_raw  ),
                      .sum_out    	(sum_out     ),
                      .mode       	(systolic_mode        ),
-                     .state      	(systolic_state       )
+                     .state      	(systolic_state       ),
+                     .enable     	(systolic_enable      )
                  );
     //加法器
     wire [16-1:0] sum1;

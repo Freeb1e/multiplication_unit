@@ -6,6 +6,7 @@
 #include "Vmul_top__Syms.h"
 #include "ram_model.hpp"
 #define MAX_SIM_TIME 13440
+
 vluint64_t sim_time = 0;
 Vmul_top *dut;
 VerilatedVcdC *m_trace;
@@ -29,18 +30,25 @@ int main(int argc, char **argv, char **env)
     RamModel ram_HASH;
     RamModel ram_sp;
     RamModel ram_sp_second;
+    #ifdef AS_TEST
+    ram_HASH.init_from_bin("A_buffer.bin");
+    ram_sp.init_from_bin("S.bin");
+    ram_sp_second.init_from_bin("B_matrix.bin");
+    #else
     ram_HASH.init_from_bin("A_full.bin");
     ram_sp.init_from_bin("S_tr.bin");
-    // ram_HASH.init_from_bin("A_buffer.bin");
-    // ram_sp.init_from_bin("S.bin");
-    ram_sp_second.init_from_bin("B_matrix.bin");
+    #endif
     dut->rst_n = 0;
     dut->calc_init = 0;
     dut->mem_mode = 0;
     tick();
     dut->rst_n = 1;
     dut->calc_init = 1;
+    #ifdef AS_TEST
+    dut->mem_mode = 1;
+    #else
     dut->mem_mode = 2;
+    #endif
     tick();
     dut->calc_init = 0;
     while (sim_time < MAX_SIM_TIME)

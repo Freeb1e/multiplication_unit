@@ -22,7 +22,8 @@ module mem_ctrl(
         output logic wen_sp_2,
         input logic HASH_ready,
         output logic [3:0] current_state,
-        output logic transposition_dir
+        output logic transposition_dir,
+        output logic systolic_enable
     );
 
     parameter IDLE=3'd0,AS=3'd1,SA=3'd2,SB=3'd3,BS=3'd4;
@@ -85,10 +86,10 @@ module mem_ctrl(
                 end
             end
             SA_loadweight1:begin
-                // if(count_4==2'b11)begin
-                //     next_state=DEBUG;
-                // end
-                next_state=SA_loadweight1;
+                if(cnt_line == 'd2 && count_4==2'd2)begin
+                    next_state=SA_calculate;
+                end else
+                    next_state=SA_loadweight1;
             end
             SA_loadweight_mid:begin
                 next_state=SA_calculate;
@@ -139,6 +140,19 @@ module mem_ctrl(
             else begin
                 load_init = 1'b0;
             end
+    end
+
+    always_ff@(posedge clk or negedge rst_n)begin
+        if(!rst_n)begin
+            systolic_enable <= 1'b1;
+        end else begin
+            if(current_state == SA_loadweight1 && count_4 == 2'b1 && cnt_line == 2) begin
+                systolic_enable <= 1'b0;
+            end
+            if(current_state == SA_calculate) begin
+                systolic_enable <= 1'b1;
+            end
+        end
     end
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -215,8 +229,6 @@ module mem_ctrl(
         end
         else begin
             if(calc_init || block_init) begin
-                cnt_line<='b0;
-            end if(current_state==SA_loadweight1 && next_state==SA_loadweight_mid) begin
                 cnt_line<='b0;
             end else begin
                 if(count_4==2'b11) begin
@@ -360,7 +372,10 @@ module mem_ctrl(
             transposition_dir = 1'b0; // 向上推出
         end
         SA: begin
-            transposition_dir = 1'b1; // 向下推出
+            if(current_state==SA_loadweight1 || current_state==SA_loadweight_mid)
+                transposition_dir = 1'b1; // 向上推出
+            else
+                transposition_dir = 1'b0; // 向下推出
         end
         endcase
     end

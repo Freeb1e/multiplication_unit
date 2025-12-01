@@ -94,6 +94,7 @@ print(f"  -> {file_C} ({os.path.getsize(file_C)} bytes)")
 # ==========================================================
 file_A_txt = 'A_full.txt'
 file_S_txt = 'S_logical.txt'
+file_S_tr_txt = 'S_transposed.txt' # <--- 新增：对应二进制存储格式的文本
 file_C_txt = 'C_result.txt'
 
 print("\n--- 正在生成人类可读文本 (.txt) ---")
@@ -104,15 +105,20 @@ header_A = f'A Matrix Full ({ROWS_A}x{COMMON_DIM})'
 np.savetxt(file_A_txt, A_full, fmt='%6d', delimiter=' ', header=header_A)
 
 # 保存 S (逻辑形状 1344x8)
-header_S = f'S Matrix Logical View ({COMMON_DIM}x{COLS_S})\nNOTE: The .bin file is TRANSPOSED ({COLS_S}x{COMMON_DIM})'
+header_S = f'S Matrix Logical View ({COMMON_DIM}x{COLS_S})\nUse this to check math logic.'
 np.savetxt(file_S_txt, S, fmt='%4d', delimiter=' ', header=header_S)
+
+# 保存 S 转置 (物理存储形状 8x1344) <--- 新增部分
+header_S_tr = f'S Matrix Transposed View ({COLS_S}x{COMMON_DIM})\nMatches .bin memory layout (Column-Major of Logical S)'
+np.savetxt(file_S_tr_txt, S.T, fmt='%4d', delimiter=' ', header=header_S_tr)
 
 # 保存 C
 header_C = f'C Result Full ({ROWS_A}x{COLS_S})'
 np.savetxt(file_C_txt, C_result, fmt='%6d', delimiter=' ', header=header_C)
 
 print(f"  -> {file_A_txt}")
-print(f"  -> {file_S_txt}")
+print(f"  -> {file_S_txt} (数学逻辑形状 1344x8)")
+print(f"  -> {file_S_tr_txt} (硬件存储形状 8x1344, 对应 S_tr.bin)")
 print(f"  -> {file_C_txt}")
 
 # ==========================================================

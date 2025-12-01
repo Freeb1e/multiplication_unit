@@ -23,7 +23,8 @@ module mem_ctrl(
         input logic HASH_ready,
         output logic [3:0] current_state,
         output logic transposition_dir,
-        output logic systolic_enable
+        output logic systolic_enable,
+        output logic transposition_rst_sync
     );
 
     parameter IDLE=3'd0,AS=3'd1,SA=3'd2,SB=3'd3,BS=3'd4;
@@ -240,20 +241,7 @@ module mem_ctrl(
             end
         end
     end
-    //乒乓转置器的选择
-    always_ff@(posedge clk or negedge rst_n) begin
-        if(!rst_n) begin
-            transposition_slect <= 1'b1;
-        end
-        else if(calc_init) begin
-            transposition_slect <= 1'b1;
-        end
-        else begin
-            if(count_4==2'd0) begin
-                transposition_slect <= ~transposition_slect;
-            end
-        end
-    end
+
     //结果矩阵分块计数器
     logic [9:0] cnt_result_block;
     always_ff@(posedge clk or negedge rst_n) begin
@@ -378,5 +366,32 @@ module mem_ctrl(
                 transposition_dir = 1'b0; // 向下推出
         end
         endcase
+    end
+
+    always_ff@(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            transposition_rst_sync <= 1'b0;
+        end
+        else begin
+            if(block_init) begin
+                transposition_rst_sync <= 1'b1;
+            end else begin
+                transposition_rst_sync <=1'b0;
+            end
+        end
+    end
+        //乒乓转置器的选择
+    always_ff@(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            transposition_slect <= 1'b1;
+        end
+        else if(calc_init || block_init) begin
+            transposition_slect <= 1'b1;
+        end
+        else begin
+            if(count_4==2'd0) begin
+                transposition_slect <= ~transposition_slect;
+            end
+        end
     end
 endmodule

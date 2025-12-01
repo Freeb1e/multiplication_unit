@@ -33,7 +33,7 @@ int main(int argc, char **argv, char **env)
     #ifdef AS_TEST
     ram_HASH.init_from_bin("A_buffer.bin");
     ram_sp.init_from_bin("S.bin");
-    ram_sp_second.init_from_bin("B_matrix.bin");
+    ram_sp_second.init_from_bin("B_matrix0.bin");
     #else
     ram_HASH.init_from_bin("A_full.bin");
     ram_sp.init_from_bin("S_tr.bin");

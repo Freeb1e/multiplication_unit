@@ -39,6 +39,7 @@ module mul_top(
     parameter DEBUG=4'd15;
     logic transposition_dir;
     logic systolic_enable;
+    logic transposition_rst_sync;
     mem_ctrl #(
                  .IDLE              	(0   ),
                  .AS                	(1   ),
@@ -72,7 +73,8 @@ module mul_top(
                  .addr_sp_2      	(addr_sp_2       ),
                  .wen_sp_2       	(wen_sp_2        ),
                  .transposition_dir (transposition_dir),
-                 .systolic_enable     (systolic_enable)
+                 .systolic_enable     (systolic_enable),
+                 .transposition_rst_sync (transposition_rst_sync)
              );
 
     // 左矩阵转置器
@@ -88,7 +90,8 @@ module mul_top(
                                   .martix_in  	(data_left   ),
                                   .martix_out 	(martix_out_transposition_1  ),
                                   .mode       	(transposition_mode_1        ),
-                                    .dir        (transposition_dir       )
+                                    .dir        (transposition_dir       ),
+                                    .rst_sync (transposition_rst_sync)
                               );
 
     transposition_top_dynamic #(
@@ -100,7 +103,8 @@ module mul_top(
                                   .martix_in  	(data_left   ),
                                   .martix_out 	(martix_out_transposition_2  ),
                                   .mode       	(transposition_mode_2      ),
-                                    .dir        (transposition_dir      )
+                                  .dir        (transposition_dir      ),
+                                  .rst_sync (transposition_rst_sync)
                               );
     //右矩阵转置器
     logic [63:0] b_mult_in;
@@ -141,7 +145,8 @@ module mul_top(
                                   .martix_in  	(b_mult_in  ),
                                   .martix_out 	(martix_out_transposition_3  ),
                                   .mode       	(transposition_mode_3        ),
-                                    .dir        (transposition_dir       )
+                                    .dir        (transposition_dir       ),
+                                    .rst_sync (transposition_rst_sync)
                               );
 
     transposition_top_dynamic #(
@@ -153,7 +158,8 @@ module mul_top(
                                   .martix_in  	(b_mult_in    ),
                                   .martix_out 	(martix_out_transposition_4  ),
                                   .mode       	(transposition_mode_4      ),
-                                    .dir        (transposition_dir       )
+                                    .dir        (transposition_dir       ),
+                                    .rst_sync (transposition_rst_sync)
                               );
 
     // output declaration of module systolic_top

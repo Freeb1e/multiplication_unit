@@ -54,7 +54,7 @@ print("-" * 50)
 # --- 5. [重点修改] 将输入矩阵存入 .bin 文件 ---
 # ==========================================================
 file_A = 'A_buffer.bin'
-file_S = 'S_transposed.bin' # 改名以体现存储结构
+file_S = 'S.bin' # 改名以体现存储结构
 file_C_golden = 'C_golden.bin'
 
 # 1. 保存 A (行优先，默认)

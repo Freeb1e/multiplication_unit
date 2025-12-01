@@ -5,7 +5,7 @@
 #include "Vmul_top.h"
 #include "Vmul_top__Syms.h"
 #include "ram_model.hpp"
-#define MAX_SIM_TIME 13440
+#define MAX_SIM_TIME 5900
 
 vluint64_t sim_time = 0;
 Vmul_top *dut;
@@ -102,7 +102,7 @@ int main(int argc, char **argv, char **env)
         }
         if (sim_time == 2800 * 2)
             ram_sp_second.dump_to_txt("B_matrix_out.txt");
-        // if(sim_time==2750)dut->HASH_ready=1;
+        if(sim_time==2759)dut->HASH_ready=1;
         dut->eval();
         m_trace->dump(sim_time);
         sim_time++;

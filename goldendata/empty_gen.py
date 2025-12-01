@@ -7,7 +7,7 @@ COLS = 8
 DTYPE = np.uint16
 MOD_MASK = 2**16  # 65536
 
-FILE_BIN = 'B_matrix.bin'
+FILE_BIN = 'B_matrix0.bin'
 FILE_TXT = 'B_matrix.txt'
 
 print(f"--- B 矩阵生成器 (顺序序列) ---")
@@ -24,7 +24,7 @@ print(f"正在生成 {total_elements} 个顺序数据 (1, 2, 3...)...")
 raw_sequence = np.arange(1, total_elements + 1, dtype=np.uint32)
 
 # 执行取模操作 (虽然 10752 不会超过 65536，但为了逻辑严谨加上)
-raw_sequence_mod = raw_sequence % MOD_MASK 
+raw_sequence_mod = raw_sequence % MOD_MASK *0
 
 # 转换为 uint16 并重塑为矩阵形状
 B_matrix = raw_sequence_mod.astype(DTYPE).reshape((ROWS, COLS))

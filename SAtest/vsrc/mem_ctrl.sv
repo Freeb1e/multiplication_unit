@@ -151,12 +151,15 @@ module mem_ctrl(
         else begin
             case(current_state)
                 SA_loadweight1: begin
-                    if(count_4 == 2'b11 && cnt_line == 2) begin
+                    if(count_4 >'d0 && cnt_line == 'd2) begin
+                        systolic_enable <= 1'b0;
+                    end else begin
                         systolic_enable <= 1'b1;
                     end
                 end
                 SA_calculate: begin
-                    systolic_enable <= 1'b1;
+                    if(last_state!=SA_calculate)
+                        systolic_enable <= 1'b1;
                 end
                 AS_WAITHASH: begin
                     systolic_enable <= 1'b0;
@@ -384,9 +387,9 @@ module mem_ctrl(
             end
             SA: begin
                 if(current_state==SA_loadweight1 || current_state==SA_loadweight_mid)
-                    transposition_dir = 1'b1; // 向上推出
+                    transposition_dir = 1'b1;
                 else
-                    transposition_dir = 1'b0; // 向下推出
+                    transposition_dir = 1'b0; 
             end
         endcase
     end

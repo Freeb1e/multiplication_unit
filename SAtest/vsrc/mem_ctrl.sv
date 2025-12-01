@@ -21,7 +21,8 @@ module mem_ctrl(
         output logic wen_HASH,
         output logic wen_sp_2,
         input logic HASH_ready,
-        output logic [3:0] current_state
+        output logic [3:0] current_state,
+        output logic transposition_dir
     );
 
     parameter IDLE=3'd0,AS=3'd1,SA=3'd2,SB=3'd3,BS=3'd4;
@@ -34,13 +35,15 @@ module mem_ctrl(
     //矩阵计算内部状态机
     parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate=4'd6,SA_WAITHASH=4'd7,SA_loadweight_mid=4'd8;
     parameter DEBUG=4'd15;
-    logic [3:0] next_state;
+    logic [3:0] next_state,last_state;
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             current_state<=FREE;
+            last_state<=FREE;
         end
         else begin
             current_state<=next_state;
+            last_state<=current_state;
         end
     end
     always_comb begin
@@ -82,9 +85,10 @@ module mem_ctrl(
                 end
             end
             SA_loadweight1:begin
-                if(count_4==2'b11)begin
-                    next_state=SA_loadweight_mid;
-                end
+                // if(count_4==2'b11)begin
+                //     next_state=DEBUG;
+                // end
+                next_state=SA_loadweight1;
             end
             SA_loadweight_mid:begin
                 next_state=SA_calculate;
@@ -111,7 +115,10 @@ module mem_ctrl(
                 data_ctrl_right=1'b1;
             end
             SA_calculate: begin
-                data_ctrl_left=1'b1;
+                if(last_state==SA_calculate)
+                    data_ctrl_left=1'b1;
+                else 
+                    data_ctrl_left=1'b0;
                 data_ctrl_right=1'b0;
             end
             DEBUG: begin
@@ -301,7 +308,7 @@ module mem_ctrl(
         else if (mode == SA) begin
             if(current_state == SA_loadweight1) begin
                 /* verilator lint_off WIDTH */
-                addr_sp = cnt_line_left*32'd64+(3-count_4)*Frodo_standard_SE;
+                addr_sp = cnt_line_left*32'd64+(count_4)*Frodo_standard_SE;
                 /* verilator lint_on WIDTH */
             end else if(current_state == SA_calculate)begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
@@ -344,5 +351,17 @@ module mem_ctrl(
                 wen_sp_2 =(cnt_line==32'd339 && count_4>0)||(cnt_line == 32'd340 && count_4 == 0)? 1'b1 : 1'b0;
             end
         end
+    end
+
+    always_comb begin
+        transposition_dir = 1'b1;
+        case(mode)
+        AS: begin
+            transposition_dir = 1'b0; // 向上推出
+        end
+        SA: begin
+            transposition_dir = 1'b1; // 向下推出
+        end
+        endcase
     end
 endmodule

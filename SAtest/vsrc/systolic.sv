@@ -28,7 +28,7 @@ module systolic_top#(
     always_comb begin
         for (int k = 0; k < SYSTOLIC_WIDTH; k = k + 1) begin
             // assign each SUM_WIDTH-bit slot from LSB upward
-            sum_out[ (SYSTOLIC_WIDTH - 1 - k) * SUM_WIDTH +: SUM_WIDTH ] = sum_array[SYSTOLIC_WIDTH-1][SYSTOLIC_WIDTH-1 - k];
+            sum_out[ (SYSTOLIC_WIDTH - 1 - k) * SUM_WIDTH +: SUM_WIDTH ] = sum_out_array[SYSTOLIC_WIDTH-1 - k];
         end
     end
     always_ff@(posedge clk or negedge rst_n) begin
@@ -94,6 +94,25 @@ module systolic_top#(
             end
         end
     endgenerate
+
+
+    genvar p;
+    logic [SUM_WIDTH-1:0] sum_out_array [0:SYSTOLIC_WIDTH-1];
+    generate
+       for(p=0;p<SYSTOLIC_WIDTH-1;p=p+1) begin:output_align_loop
+            delay_reg #(
+                          .DATA_WIDTH(SUM_WIDTH),
+                          .DELAY_CYCLES(SYSTOLIC_WIDTH-p-1)
+                      ) sum_delay_inst (
+                          .clk(clk),
+                          .rst_n(rst_n),
+                          .din(sum_array[SYSTOLIC_WIDTH-1][p]),
+                          .delay_switch(~mode),
+                          .dout(sum_out_array[p])
+                      );
+        end
+    endgenerate
+    assign sum_out_array[3] = sum_array[SYSTOLIC_WIDTH-1][3];
 endmodule
 
 

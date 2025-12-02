@@ -33,9 +33,9 @@ module mul_top(
 
     logic [4*16-1:0] martix_out_transposition_3,martix_out_transposition_4;
     logic transposition_mode_3,transposition_mode_4;
-    
+
     logic [3:0] current_state;
-    parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate=4'd6,SA_WAITHASH=4'd7;
+    parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate1=4'd6,SA_calculate2=4'd7,SA_WAITHASH=4'd8;
     parameter DEBUG=4'd15;
     logic transposition_dir;
     logic systolic_enable;
@@ -90,8 +90,8 @@ module mul_top(
                                   .martix_in  	(data_left   ),
                                   .martix_out 	(martix_out_transposition_1  ),
                                   .mode       	(transposition_mode_1        ),
-                                    .dir        (transposition_dir       ),
-                                    .rst_sync (transposition_rst_sync)
+                                  .dir        (transposition_dir       ),
+                                  .rst_sync (transposition_rst_sync)
                               );
 
     transposition_top_dynamic #(
@@ -135,18 +135,19 @@ module mul_top(
 
     assign transposition_mode_3 = transposition_slect ? 1'b1 : 1'b0;
     assign transposition_mode_4 = transposition_slect ? 1'b0 : 1'b1;
-
+    logic [63:0] data_right_processed;
+    assign data_right_processed =(current_state == SA_calculate1||current_state==SA_calculate2) ? sum_out : b_mult_in;
     transposition_top_dynamic #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
                               u_transposition_top_default_3(
                                   .clk        	(clk         ),
                                   .rst_n      	(rst_n       ),
-                                  .martix_in  	(b_mult_in  ),
+                                  .martix_in  	(data_right_processed  ),
                                   .martix_out 	(martix_out_transposition_3  ),
                                   .mode       	(transposition_mode_3        ),
-                                    .dir        (transposition_dir       ),
-                                    .rst_sync (transposition_rst_sync)
+                                  .dir        (transposition_dir       ),
+                                  .rst_sync (transposition_rst_sync)
                               );
 
     transposition_top_dynamic #(
@@ -155,13 +156,14 @@ module mul_top(
                               u_transposition_top_default_4(
                                   .clk        	(clk         ),
                                   .rst_n      	(rst_n       ),
-                                  .martix_in  	(b_mult_in    ),
+                                  .martix_in  	(data_right_processed    ),
                                   .martix_out 	(martix_out_transposition_4  ),
                                   .mode       	(transposition_mode_4      ),
-                                    .dir        (transposition_dir       ),
-                                    .rst_sync (transposition_rst_sync)
+                                  .dir        (transposition_dir       ),
+                                  .rst_sync (transposition_rst_sync)
                               );
-
+    logic [63:0] sum_out_transposed;
+    assign sum_out_transposed = (transposition_slect) ? martix_out_transposition_3 : martix_out_transposition_4 ;
     // output declaration of module systolic_top
     logic [4*16-1:0] a_in_raw;
     logic [4*16-1:0] b_in_raw;
@@ -172,23 +174,23 @@ module mul_top(
 
     always_comb begin
         case(current_state)
-        AS_SQUARE,AS_SAVE,AS_WAITHASH:begin
-            a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
-            b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
-        end
-        SA_loadweight1,SA_loadweight2:begin
-            a_in_raw = 64'd0 ;
-            b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
-        end
-        SA_calculate:begin
-            a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
-            b_in_raw = 0;
-        end
-        default: begin
-            a_in_raw = 64'd0 ;
-            b_in_raw = b_mult_in;
-        end
-        endcase 
+            AS_SQUARE,AS_SAVE,AS_WAITHASH: begin
+                a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
+                b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
+            end
+            SA_loadweight1,SA_loadweight2: begin
+                a_in_raw = 64'd0 ;
+                b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
+            end
+            SA_calculate1,SA_calculate2: begin
+                a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
+                b_in_raw = 0;
+            end
+            default: begin
+                a_in_raw = 64'd0 ;
+                b_in_raw = b_mult_in;
+            end
+        endcase
     end
     systolic_top #(
                      .DATA_WIDTH     	(16  ),
@@ -230,6 +232,8 @@ module mul_top(
                 .rst_n 	(rst_n  )
             );
     always_comb begin
-        bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
+        if(current_state == SA_calculate1 || current_state==SA_calculate2) begin
+            bram_wdata_sp_2 = sum_out_transposed;
+        end else bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
     end
 endmodule

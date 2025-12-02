@@ -30,17 +30,57 @@ S_tr_matrix = np.fromfile(FILE_S, dtype=np.uint8).reshape(ROWS_S_TR, COLS_S_TR)
 print("✅ 数据加载完成。")
 
 # ==========================================================
-# --- 2. 核心计算函数 ---
+# --- 新增: 生成完整的 S_tr * A 结果 (Golden Reference) ---
+# ==========================================================
+print("\n正在计算完整的 S_tr * A 结果 (Golden Reference)...")
+# 计算矩阵乘法: (8x1344) * (1344x1344) -> (8x1344)
+# 使用 uint64 防止中间累加溢出
+full_result_64 = np.dot(S_tr_matrix.astype(np.uint64), A_matrix.astype(np.uint64))
+full_result = (full_result_64 % 65536).astype(np.uint16)
+
+# 保存完整结果 (Hex)
+with open('final_result.txt', 'w') as f:
+    f.write("// Full Result Matrix (S_tr * A)\n")
+    f.write(f"// Shape: {ROWS_S_TR} rows x {ROWS_A} columns\n")
+    f.write("// Format: Hex uint16\n")
+    
+    # 打印列头
+    f.write("      ")
+    for c in range(16): f.write(f"Col_{c:<3} ")
+    f.write("...\n")
+    
+    for r in range(ROWS_S_TR):
+        f.write(f"Row_{r}: ")
+        for c in range(ROWS_A):
+            f.write(f"{full_result[r, c]:04X} ")
+        f.write("\n")
+
+# 保存完整结果 (Decimal)
+with open('final_result_dec.txt', 'w') as f:
+    f.write("// Full Result Matrix (S_tr * A)\n")
+    f.write(f"// Shape: {ROWS_S_TR} rows x {ROWS_A} columns\n")
+    f.write("// Format: Decimal uint16\n")
+    
+    # 打印列头
+    f.write("      ")
+    for c in range(16): f.write(f"Col_{c:<5} ")
+    f.write("...\n")
+    
+    for r in range(ROWS_S_TR):
+        f.write(f"Row_{r}: ")
+        for c in range(ROWS_A):
+            f.write(f"{full_result[r, c]:<6d} ")
+        f.write("\n")
+
+print(f"✅ 完整结果已保存至 'final_result.txt' 和 'final_result_dec.txt'")
+
+# ==========================================================
+# --- 2. 核心计算函数 (局部调试) ---
 # ==========================================================
 def calculate_partial_outer_product_sum(start_index, steps=4):
     """
     计算从 start_index 开始的 steps 个外积的和。
     公式: Sum = Sum_{k=i}^{i+steps-1} ( S_tr[:, k] * A[k, :] )
-    
-    Dimensions:
-      S_tr[:, k] shape is (8,)  -> View as (8, 1)
-      A[k, :]    shape is (1344,) -> View as (1, 1344)
-      Outer Prod shape is (8, 1344)
     """
     
     # 初始化累加器 (使用 uint32 防止溢出，最后再模)
@@ -54,25 +94,19 @@ def calculate_partial_outer_product_sum(start_index, steps=4):
             continue
             
         # 1. 获取向量
-        # S_vec: S_tr 的第 k 列 (大小 8)
-        # 对应硬件：从 S Buffer 中读出的一列数据
         s_vec = S_tr_matrix[:, k].astype(np.uint32).reshape(ROWS_S_TR, 1)
-        
-        # A_vec: A 的第 k 行 (大小 1344)
-        # 对应硬件：从 A Buffer 中读出的一行数据
         a_vec = A_matrix[k, :].astype(np.uint32).reshape(1, ROWS_A)
         
-        # 2. 计算外积 (8 x 1) * (1 x 1344) = (8 x 1344)
-        # 对应硬件：脉动阵列在该时钟周期内所有 PE 的乘法操作
+        # 2. 计算外积
         outer_prod = np.dot(s_vec, a_vec)
         
         # 3. 累加
         accumulator += outer_prod
         
-        # 打印部分调试信息 (打印每一步中第一个PE的值)
+        # 打印部分调试信息
         print(f"  Step k={k}: S[{0},{k}]={s_vec[0,0]} * A[{k},{0}]={a_vec[0,0]} -> Prod={outer_prod[0,0]}")
 
-    # 4. 模运算 (FrodoKEM 是 mod 2^16)
+    # 4. 模运算
     result_mod = accumulator % 65536
     return result_mod.astype(np.uint16)
 
@@ -90,7 +124,6 @@ while True:
             print("索引超出范围！")
             continue
 
-        # 新增：询问叠加次数
         steps_input = input("请输入叠加次数 (默认为 4): ").strip()
         if steps_input == "":
             steps = 4
@@ -107,44 +140,40 @@ while True:
         end_idx = start_idx + steps - 1
 
         # --- 输出结果到文件 (Hex) ---
-        out_filename = "debugfile.txt"  # 修改文件名
+        out_filename = "debugfile.txt"
         
         with open(out_filename, 'w') as f:
             f.write(f"// partial sum of outer products from k={start_idx} to {end_idx} (steps={steps})\n")
             f.write(f"// Shape: 8 rows (S dimension) x 1344 columns (A dimension)\n")
             f.write(f"// Each value is Hex uint16\n")
             
-            # 打印列头
             f.write("      ")
-            for c in range(16): # 只打印前16列的头用于预览
+            for c in range(16): 
                 f.write(f"Col_{c:<3} ")
             f.write("...\n")
             
             for r in range(ROWS_S_TR):
                 f.write(f"Row_{r}: ")
-                # 写入所有数据
                 for c in range(ROWS_A):
                     val = result_matrix[r, c]
                     f.write(f"{val:04X} ")
                 f.write("\n")
 
         # --- 输出结果到文件 (Decimal) ---
-        out_filename_dec = "debugdec.txt" # 修改文件名
+        out_filename_dec = "debugdec.txt"
         
         with open(out_filename_dec, 'w') as f:
             f.write(f"// partial sum of outer products from k={start_idx} to {end_idx} (steps={steps})\n")
             f.write(f"// Shape: 8 rows (S dimension) x 1344 columns (A dimension)\n")
             f.write(f"// Each value is Decimal uint16\n")
             
-            # 打印列头
             f.write("      ")
-            for c in range(16): # 只打印前16列的头用于预览
+            for c in range(16): 
                 f.write(f"Col_{c:<5} ")
             f.write("...\n")
             
             for r in range(ROWS_S_TR):
                 f.write(f"Row_{r}: ")
-                # 写入所有数据
                 for c in range(ROWS_A):
                     val = result_matrix[r, c]
                     f.write(f"{val:<6d} ")

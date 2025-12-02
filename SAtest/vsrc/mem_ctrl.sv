@@ -35,7 +35,7 @@ module mem_ctrl(
     logic half_flag;
     logic block_init;
     //矩阵计算内部状态机
-    parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate=4'd6,SA_WAITHASH=4'd7,SA_loadweight_mid=4'd8;
+    parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate1=4'd6,SA_calculate2=4'd7,SA_WAITHASH=4'd8,SA_loadweight_mid=4'd9;
     parameter DEBUG=4'd15;
     logic [3:0] next_state,last_state;
     always_ff@(posedge clk or negedge rst_n) begin
@@ -88,16 +88,32 @@ module mem_ctrl(
             end
             SA_loadweight1: begin
                 if(cnt_line == 'd2 && count_4==2'd2) begin
-                    next_state=SA_calculate;
+                    next_state=SA_calculate1;
                 end
                 else
                     next_state=SA_loadweight1;
             end
-            SA_loadweight_mid: begin
-                next_state=SA_calculate;
+            SA_loadweight2: begin
+                if(cnt_line == 'd2 && count_4==2'd2) begin
+                    next_state=SA_calculate2;
+                end
+                else
+                    next_state=SA_loadweight2;
             end
-            SA_calculate: begin
-                next_state=SA_calculate;
+            SA_calculate1: begin
+                if(cnt_line == 32'd340 && count_4==2'b11)
+                    next_state=SA_loadweight2;
+                else
+                    next_state=SA_calculate1;
+            end
+            SA_calculate2: begin
+                if(cnt_line == 32'd340 && count_4==2'b11)
+                    next_state=SA_WAITHASH;
+                else
+                    next_state=SA_calculate2;
+            end
+            SA_WAITHASH: begin
+                next_state=SA_WAITHASH;
             end
             DEBUG: begin
                 next_state=DEBUG;
@@ -113,12 +129,19 @@ module mem_ctrl(
                 data_ctrl_left=1'b1;
                 data_ctrl_right=1'b1;
             end
-            SA_loadweight1,SA_loadweight_mid: begin
+            SA_loadweight1,SA_loadweight2: begin
                 data_ctrl_left=1'b0;
                 data_ctrl_right=1'b1;
             end
-            SA_calculate: begin
-                if(last_state==SA_calculate)
+            SA_calculate1: begin
+                if(last_state==SA_calculate1)
+                    data_ctrl_left=1'b1;
+                else
+                    data_ctrl_left=1'b0;
+                data_ctrl_right=1'b0;
+            end
+            SA_calculate2: begin
+                if(last_state==SA_calculate2)
                     data_ctrl_left=1'b1;
                 else
                     data_ctrl_left=1'b0;
@@ -139,6 +162,9 @@ module mem_ctrl(
         if(current_state!=SA_loadweight1 && next_state==SA_loadweight1) begin
             load_init = 1'b1;
         end
+        else if(current_state!=SA_loadweight2 && next_state==SA_loadweight2) begin
+            load_init = 1'b1;
+        end
         else begin
             load_init = 1'b0;
         end
@@ -150,15 +176,20 @@ module mem_ctrl(
         end
         else begin
             case(current_state)
-                SA_loadweight1: begin
+                SA_loadweight1,SA_loadweight2: begin
                     if(count_4 >'d0 && cnt_line == 'd2) begin
                         systolic_enable <= 1'b0;
-                    end else begin
+                    end
+                    else begin
                         systolic_enable <= 1'b1;
                     end
                 end
-                SA_calculate: begin
-                    if(last_state!=SA_calculate)
+                SA_calculate1: begin
+                    if(last_state!=SA_calculate1)
+                        systolic_enable <= 1'b1;
+                end
+                SA_calculate2: begin
+                    if(last_state!=SA_calculate2)
                         systolic_enable <= 1'b1;
                 end
                 AS_WAITHASH: begin
@@ -185,7 +216,9 @@ module mem_ctrl(
             if(current_state==AS_WAITHASH && next_state==AS_SQUARE) begin
                 block_init <= 1'b1;
             end
-            else if(current_state==SA_loadweight1 && next_state == SA_calculate) begin
+            else if(current_state==SA_loadweight1&&next_state == SA_calculate1) begin
+                block_init <= 1'b1;
+            end else if(current_state==SA_loadweight2&&next_state == SA_calculate2) begin
                 block_init <= 1'b1;
             end
             else begin
@@ -193,7 +226,20 @@ module mem_ctrl(
             end
         end
     end
-
+    logic load_bias;
+    always_ff@(posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            load_bias <= 1'b0;
+        end
+        else begin
+            if(current_state==SA_loadweight1)begin
+                load_bias <= 1'b0;
+            end
+            else if(current_state==SA_loadweight2) begin
+                load_bias <= 1'b1;
+            end else load_bias <= load_bias;
+        end
+    end
     //矩阵格式载入
     always_ff @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -217,7 +263,10 @@ module mem_ctrl(
                 SA_loadweight1,SA_loadweight2: begin
                     systolic_state <= 1'b0;
                 end
-                SA_calculate: begin
+                SA_calculate1: begin
+                    systolic_state<=1'b1;
+                end
+                SA_calculate2: begin
                     systolic_state<=1'b1;
                 end
                 DEBUG: begin
@@ -242,7 +291,7 @@ module mem_ctrl(
                 count_4<='b0;
             end
             else begin
-                if(mode ==AS || current_state==SA_loadweight1 || current_state==SA_loadweight2 || current_state==SA_calculate)
+                if(mode ==AS || current_state==SA_loadweight1 || current_state==SA_loadweight2 || current_state==SA_calculate1 || current_state==SA_calculate2)
                     count_4<=count_4+2'b1;
             end
         end
@@ -294,7 +343,7 @@ module mem_ctrl(
                 cnt_line_left <= 'b0;
             end
             else begin
-                if(current_state == SA_calculate && next_state == SA_loadweight1) begin
+                if(current_state == SA_calculate1 && next_state == SA_loadweight1) begin
                     cnt_line_left <= cnt_line_left + 9'b1;
                 end
             end
@@ -307,6 +356,8 @@ module mem_ctrl(
     logic [1:0] save_bias,save_bias_w;
     assign save_bias = 2'b10 - count_4;
     assign save_bias_w = save_bias+2'd2;
+    logic [1:0] save_bias_SA;
+    assign save_bias_SA = count_4-2'd1;
     logic [31:0] debug_addr_w,debug_addr_r;
     assign debug_addr_w = addr_sp_2-BASEADDR_B;
     assign debug_addr_r = addr_sp-BASEADDR_B;
@@ -334,10 +385,24 @@ module mem_ctrl(
             if(current_state == SA_loadweight1) begin
                 /* verilator lint_off WIDTH */
                 addr_sp = cnt_line_left*32'd64+(count_4)*Frodo_standard_SE;
+
+            end
+            else if(current_state == SA_calculate1) begin
+                addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
+                /* verilator lint_off WIDTH */
+                addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A;
                 /* verilator lint_on WIDTH */
             end
-            else if(current_state == SA_calculate) begin
+            else if (current_state == SA_loadweight2) begin
+                /* verilator lint_off WIDTH */
+                addr_sp = cnt_line_left*32'd64+(count_4)*Frodo_standard_SE + Frodo_standard_SE*32'd4;
+                /* verilator lint_on WIDTH */
+            end 
+            else if(current_state == SA_calculate2) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
+                /* verilator lint_off WIDTH */
+                addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A+Frodo_standard_A*4;
+                /* verilator lint_on WIDTH */
             end
         end
     end
@@ -348,11 +413,11 @@ module mem_ctrl(
                 data_left =(data_ctrl_left)? bram_data_HASH:64'd0;
                 data_right = (data_ctrl_right)? bram_data_sp:64'd0;
             end
-            SA_loadweight1,SA_loadweight_mid: begin
+            SA_loadweight1,SA_loadweight2: begin
                 data_left = 64'd0;
                 data_right = (data_ctrl_right)? bram_data_sp:64'd0;
             end
-            SA_calculate: begin
+            SA_calculate1,SA_calculate2: begin
                 data_left = (data_ctrl_left)? bram_data_HASH:64'd0;
                 data_right = 64'd0;
             end
@@ -377,6 +442,18 @@ module mem_ctrl(
                 wen_sp_2 =(cnt_line==32'd339 && count_4>0)||(cnt_line == 32'd340 && count_4 == 0)? 1'b1 : 1'b0;
             end
         end
+        else if(mode==SA) begin
+            if(current_state == SA_calculate1 || current_state == SA_calculate2)
+            if (cnt_line == 4) begin
+                wen_sp_2 = (count_4 != 0);
+            end
+            else if (cnt_line > 4 && cnt_line < 340) begin
+                wen_sp_2 = 1'b1;
+            end
+            else if (cnt_line == 340) begin
+                wen_sp_2 = (count_4 == 0);
+            end
+        end
     end
 
     always_comb begin
@@ -386,10 +463,10 @@ module mem_ctrl(
                 transposition_dir = 1'b0; // 向上推出
             end
             SA: begin
-                if(current_state==SA_loadweight1 || current_state==SA_loadweight_mid)
+                if(current_state==SA_loadweight1 || current_state==SA_loadweight2)
                     transposition_dir = 1'b1;
                 else
-                    transposition_dir = 1'b0; 
+                    transposition_dir = 1'b0;
             end
         endcase
     end

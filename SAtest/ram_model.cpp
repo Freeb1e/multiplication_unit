@@ -143,7 +143,76 @@ void RamModel::dump_to_txt(const std::string &filename) {
     outfile.close();
     std::cout << "[RamModel] Memory dumped to " << filename << std::endl;
 }
+void RamModel::dump_decimal_matrix(const std::string &filename) {
+    std::ofstream outfile(filename);
+    
+    if (!outfile.is_open()) {
+        std::cerr << "[RamModel] Error: Cannot create matrix file " << filename << std::endl;
+        return;
+    }
 
+    // 配置参数
+    const int ELEMENTS_PER_ROW = 1344; // 用户要求：1344个元素一行
+    const int ELEMENTS_PER_WORD = 4;   // 64bit / 16bit = 4
+    
+    // 计算多少个 RAM Word (64bit) 构成一行输出
+    // 1344 / 4 = 336 个 Word
+    const int WORDS_PER_ROW = ELEMENTS_PER_ROW / ELEMENTS_PER_WORD; 
+
+    // 遍历内存
+    for (size_t i = 0; i < memory.size(); ++i) {
+        uint64_t data = memory[i];
+        // 拆分 64位 -> 4 x 16位
+        uint16_t v0 = data & 0xFFFF;          // 低 16位
+        uint16_t v1 = (data >> 16) & 0xFFFF;
+        uint16_t v2 = (data >> 32) & 0xFFFF;
+        uint16_t v3 = (data >> 48) & 0xFFFF;  // 高 16位
+
+        outfile << std::dec << std::setfill(' '); 
+        
+        // 输出当前字的 4 个元素
+        outfile << std::setw(6) << v0 << " "
+                << std::setw(6) << v1 << " "
+                << std::setw(6) << v2 << " "
+                << std::setw(6) << v3;
+
+        // 判断换行逻辑
+        // 如果当前是本行的第 336 个字 (index 从 0 开始，所以 i+1 是计数)
+        if ((i + 1) % WORDS_PER_ROW == 0) {
+            outfile << std::endl;
+        } else {
+            // 如果不是行尾，且不是最后一个数据，加一个空格分隔下一个字
+            outfile << " "; 
+        }
+    }
+    
+    // 确保文件最后有换行（如果循环结束时没有刚好换行）
+    if (memory.size() % WORDS_PER_ROW != 0) {
+        outfile << std::endl;
+    }
+
+    outfile.close();
+    std::cout << "[RamModel] Decimal Matrix saved to " << filename 
+              << " (Format: " << ELEMENTS_PER_ROW << " elements/row)" << std::endl;
+}
+void RamModel::dump_to_bin(const std::string &filename) {
+    std::ofstream outfile(filename, std::ios::out | std::ios::binary);
+    
+    if (!outfile.is_open()) {
+        std::cerr << "[RamModel] Error: Cannot create binary file " << filename << std::endl;
+        return;
+    }
+
+    // 直接将 vector 中的内存数据块写入文件
+    // 注意：这将按照当前机器的字节序（通常是 Little Endian）写入
+    if (!memory.empty()) {
+        outfile.write(reinterpret_cast<const char*>(memory.data()), memory.size() * sizeof(uint64_t));
+    }
+
+    outfile.close();
+    std::cout << "[RamModel] Binary Dump saved to " << filename 
+              << " (" << memory.size() * sizeof(uint64_t) << " bytes)" << std::endl;
+}
 // ============================================================
 //  测试主函数更新 (增加了双端口测试)
 // ============================================================

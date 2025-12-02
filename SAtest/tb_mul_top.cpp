@@ -100,8 +100,12 @@ int main(int argc, char **argv, char **env)
                       << val0 << ", " << val1 << ", " << val2 << ", " << val3
                       << std::endl;
         }
-        if (sim_time == 2800 * 2)
+        if (sim_time == 2800 * 2){
             ram_sp_second.dump_to_txt("B_matrix_out.txt");
+            ram_sp_second.dump_decimal_matrix("ram_matrix_dec.txt");
+            ram_sp_second.dump_to_bin("left_B.bin");
+        }
+            
         if(sim_time==2759)dut->HASH_ready=1;
         dut->eval();
         m_trace->dump(sim_time);

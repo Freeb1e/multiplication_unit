@@ -72,7 +72,10 @@ with open('final_result_dec.txt', 'w') as f:
             f.write(f"{full_result[r, c]:<6d} ")
         f.write("\n")
 
-print(f"✅ 完整结果已保存至 'final_result.txt' 和 'final_result_dec.txt'")
+# 保存完整结果 (Binary)
+full_result.tofile('final_result.bin')
+
+print(f"✅ 完整结果已保存至 'final_result.txt', 'final_result_dec.txt' 和 'final_result.bin'")
 
 # ==========================================================
 # --- 2. 核心计算函数 (局部调试) ---
@@ -178,9 +181,14 @@ while True:
                     val = result_matrix[r, c]
                     f.write(f"{val:<6d} ")
                 f.write("\n")
+        
+        # --- 输出结果到文件 (Binary) ---
+        out_filename_bin = "debugfile.bin"
+        result_matrix.tofile(out_filename_bin)
                 
         print(f"✅ Hex 结果已保存至: {out_filename}")
         print(f"✅ Dec 结果已保存至: {out_filename_dec}")
+        print(f"✅ Bin 结果已保存至: {out_filename_bin}")
         
         # --- 在终端打印左上角预览 (8x8) ---
         print(f"预览 (Top-Left 8x8 Block) [Hex]:")

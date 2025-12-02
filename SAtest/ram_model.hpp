@@ -42,6 +42,8 @@ public:
                    uint64_t addr_a, bool wen_a, uint64_t wdata_a,
                    uint64_t addr_b, bool wen_b, uint64_t wdata_b,
                    uint64_t &rdata_a, uint64_t &rdata_b);
+    void dump_decimal_matrix(const std::string &filename);
+    void dump_to_bin(const std::string &filename);
 };
 
 #endif // RAM_MODEL_HPP

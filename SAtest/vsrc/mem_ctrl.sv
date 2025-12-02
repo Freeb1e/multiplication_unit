@@ -390,7 +390,9 @@ module mem_ctrl(
             else if(current_state == SA_calculate1) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
                 /* verilator lint_off WIDTH */
-                addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A;
+                if(count_4!=0)
+                    addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A;
+                else addr_sp_2 = BASEADDR_B + (cnt_line-32'd5) * 32'd64 + save_bias_SA*Frodo_standard_A;
                 /* verilator lint_on WIDTH */
             end
             else if (current_state == SA_loadweight2) begin
@@ -401,7 +403,9 @@ module mem_ctrl(
             else if(current_state == SA_calculate2) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
                 /* verilator lint_off WIDTH */
+                if(count_4!=0)
                 addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A+Frodo_standard_A*4;
+                else addr_sp_2 = BASEADDR_B + (cnt_line-32'd5) * 32'd64 + save_bias_SA*Frodo_standard_A+Frodo_standard_A*4;
                 /* verilator lint_on WIDTH */
             end
         end

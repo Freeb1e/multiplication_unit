@@ -1,29 +1,37 @@
 module mem_ctrl(
         input logic clk,
         input logic rst_n,
-        input logic [2:0] mem_mode,//0:idle 1:AS 2:SA 3:SB 4:BS
+        input logic [2:0] mem_mode,
         input logic calc_init,
+
         input logic [63:0] bram_data_sp,
         input logic [63:0] bram_data_dp,
         input logic [63:0] bram_data_HASH,
-        output logic [63:0] data_left,
-        output logic [63:0] data_right,
+        input logic [63:0] bram_data_sp_2,
+
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
         output logic [31:0] addr_HASH,
         output logic [31:0] addr_sp_2,
-        output logic transposition_slect,
-        output logic systolic_state,
-        output logic systolic_mode,
-        output logic [63:0] data_adder,
+
         output logic wen_sp,
         output logic wen_dp,
         output logic wen_HASH,
         output logic wen_sp_2,
+
+        output logic [63:0] data_left,
+        output logic [63:0] data_right,
+
+        output logic systolic_state,
+        output logic systolic_mode,
+        output logic systolic_enable,
+        output logic [63:0] data_adder,
+
         input logic HASH_ready,
         output logic [3:0] current_state,
+
         output logic transposition_dir,
-        output logic systolic_enable,
+        output logic transposition_slect,
         output logic transposition_rst_sync
     );
 
@@ -357,7 +365,7 @@ module mem_ctrl(
     assign save_bias = 2'b10 - count_4;
     assign save_bias_w = save_bias+2'd2;
     logic [1:0] save_bias_SA;
-    assign save_bias_SA = count_4-2'd1;
+    assign save_bias_SA = count_4-2'd2;
     logic [31:0] debug_addr_w,debug_addr_r;
     assign debug_addr_w = addr_sp_2-BASEADDR_B;
     assign debug_addr_r = addr_sp-BASEADDR_B;
@@ -390,10 +398,12 @@ module mem_ctrl(
             else if(current_state == SA_calculate1) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
                 /* verilator lint_off WIDTH */
-                if(count_4!=0)
+                if(count_4==2 || count_4 == 3)
                     addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A;
                 else addr_sp_2 = BASEADDR_B + (cnt_line-32'd5) * 32'd64 + save_bias_SA*Frodo_standard_A;
                 /* verilator lint_on WIDTH */
+                addr_sp=BASEADDR_B + (cnt_line-32'd4) * 32'd64 + count_4*Frodo_standard_A;
+                data_adder = bram_data_sp;
             end
             else if (current_state == SA_loadweight2) begin
                 /* verilator lint_off WIDTH */
@@ -403,9 +413,11 @@ module mem_ctrl(
             else if(current_state == SA_calculate2) begin
                 addr_HASH = cnt_line*32'd64+count_4*Frodo_standard_A;
                 /* verilator lint_off WIDTH */
-                if(count_4!=0)
+                if(count_4==2 || count_4 == 3)
                 addr_sp_2 = BASEADDR_B + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A+Frodo_standard_A*4;
                 else addr_sp_2 = BASEADDR_B + (cnt_line-32'd5) * 32'd64 + save_bias_SA*Frodo_standard_A+Frodo_standard_A*4;
+                addr_sp=BASEADDR_B + (cnt_line-32'd4) * 32'd64 + count_4*Frodo_standard_A+Frodo_standard_A*4;
+                data_adder = bram_data_sp;
                 /* verilator lint_on WIDTH */
             end
         end
@@ -449,13 +461,13 @@ module mem_ctrl(
         else if(mode==SA) begin
             if(current_state == SA_calculate1 || current_state == SA_calculate2)
             if (cnt_line == 4) begin
-                wen_sp_2 = (count_4 != 0);
+                wen_sp_2 = (count_4 > 1);
             end
             else if (cnt_line > 4 && cnt_line < 340) begin
                 wen_sp_2 = 1'b1;
             end
             else if (cnt_line == 340) begin
-                wen_sp_2 = (count_4 == 0);
+                wen_sp_2 = (count_4 < 2);
             end
         end
     end

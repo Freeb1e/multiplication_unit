@@ -37,6 +37,7 @@ int main(int argc, char **argv, char **env)
     #else
     ram_HASH.init_from_bin("A_full.bin");
     ram_sp.init_from_bin("S_tr.bin");
+    ram_sp_second.init_from_bin("B_matrix.bin");
     #endif
     dut->rst_n = 0;
     dut->calc_init = 0;
@@ -82,6 +83,7 @@ int main(int argc, char **argv, char **env)
         {
             dut->bram_data_HASH = HASHdata;
             dut->bram_data_sp = spdata;
+           // dut->bram_data_sp_2 = spdata_null2;
         }
         if (dut->clk == 1 && dut->wen_sp_2 == 1)
         {

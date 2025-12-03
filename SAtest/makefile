@@ -20,6 +20,11 @@ RUN: run
 see:
 	gtkwave waveform.vcd
 
+diff:
+	diff -u left_B.bin ../goldendata_left/debug/debugfile.bin
+
+diff1:
+	diff -u left_B.bin ../goldendata_left/debug/adderB.bin
 
 clean:
 	rm -rf obj_dir waveform.vcd

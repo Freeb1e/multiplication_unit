@@ -8,6 +8,7 @@ module mul_top(
         input logic [63:0] bram_data_sp,
         input logic [63:0] bram_data_dp,
         input logic [63:0] bram_data_HASH,
+        input logic [63:0] bram_data_sp_2,
 
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
@@ -74,7 +75,8 @@ module mul_top(
                  .wen_sp_2       	(wen_sp_2        ),
                  .transposition_dir (transposition_dir),
                  .systolic_enable     (systolic_enable),
-                 .transposition_rst_sync (transposition_rst_sync)
+                 .transposition_rst_sync (transposition_rst_sync),
+                 .bram_data_sp_2        (bram_data_sp_2)
              );
 
     // 左矩阵转置器
@@ -213,13 +215,21 @@ module mul_top(
     wire [16-1:0] sum3;
     wire [16-1:0] sum4;
     logic [4*16-1:0] data_adder;
+    logic [4*16-1:0] sum_out_mux;
+    always_comb begin
+        if(current_state == SA_calculate1 || current_state == SA_calculate2)begin
+            sum_out_mux = sum_out_transposed;
+        end else begin
+            sum_out_mux = sum_out;
+        end
+    end
     Adder_4 #(
                 .DATA_WIDTH 	(16  ))
             u_Adder_4(
-                .a1   	(sum_out[16*1-1:16*0]   ),
-                .a2   	(sum_out[16*2-1:16*1]   ),
-                .a3   	(sum_out[16*3-1:16*2]   ),
-                .a4   	(sum_out[16*4-1:16*3]   ),
+                .a1   	(sum_out_mux[16*1-1:16*0]   ),
+                .a2   	(sum_out_mux[16*2-1:16*1]   ),
+                .a3   	(sum_out_mux[16*3-1:16*2]   ),
+                .a4   	(sum_out_mux[16*4-1:16*3]   ),
                 .b1   	(data_adder[16*1-1:16*0] ),
                 .b2   	(data_adder[16*2-1:16*1] ),
                 .b3   	(data_adder[16*3-1:16*2] ),
@@ -233,7 +243,7 @@ module mul_top(
             );
     always_comb begin
         if(current_state == SA_calculate1 || current_state==SA_calculate2) begin
-            bram_wdata_sp_2 = sum_out_transposed;
+            bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
         end else bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
     end
 endmodule

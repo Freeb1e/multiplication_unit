@@ -111,15 +111,15 @@ module mul_top(
     //右矩阵转置器
     logic [63:0] b_mult_in;
     assign b_mult_in = (~delayaddr5) ? {
-               8'd0, data_right[31:24],  // Byte 3 -> [63:48]
-               8'd0, data_right[23:16],  // Byte 2 -> [47:32]
-               8'd0, data_right[15:8],   // Byte 1 -> [31:16]
-               8'd0, data_right[7:0]     // Byte 0 -> [15:0]
+               {8{data_right[31]}}, data_right[31:24],  // Byte 3 -> [63:48]
+               {8{data_right[23]}}, data_right[23:16],  // Byte 2 -> [47:32]
+               {8{data_right[15]}}, data_right[15:8],   // Byte 1 -> [31:16]
+               {8{data_right[7]}}, data_right[7:0]     // Byte 0 -> [15:0]
            }: {
-               8'd0, data_right[63:56],  // Byte 7 -> [63:48]
-               8'd0, data_right[55:48],  // Byte 6 -> [47:32]
-               8'd0, data_right[47:40],  // Byte 5 -> [31:16]
-               8'd0, data_right[39:32]   // Byte 4 -> [15:0]
+               {8{data_right[63]}}, data_right[63:56],  // Byte 7 -> [63:48]
+               {8{data_right[55]}}, data_right[55:48],  // Byte 6 -> [47:32]
+               {8{data_right[47]}}, data_right[47:40],  // Byte 5 -> [31:16]
+               {8{data_right[39]}}, data_right[39:32]   // Byte 4 -> [15:0]
            };
     logic delayaddr5;
 

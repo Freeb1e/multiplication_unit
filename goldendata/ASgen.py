@@ -8,7 +8,7 @@ COLS_S = 8  # S 的列数
 
 # --- 2. 定义数据类型 (DTypes) ---
 DTYPE_A = np.uint16  # A_buffer 是 16-bit
-DTYPE_S = np.uint8   # S 是 8-bit
+DTYPE_S = np.int8    # S 是 8-bit (signed)
 DTYPE_C = np.uint16  # 结果 C 是 16-bit
 
 print(f"--- FrodoKEM A*S (混合精度) 仿真数据生成器 ---")
@@ -26,8 +26,8 @@ A_buffer = np.random.randint(0, 2**16,
                             size=(ROWS_A_BUFF, COMMON_DIM), 
                             dtype=DTYPE_A)
 
-# 生成 S 矩阵 (逻辑上是 1344x4)，元素范围 [0, 2**8 - 1]
-S = np.random.randint(0, 2**8, 
+# 生成 S 矩阵 (逻辑上是 1344x4)，元素范围 [-12, 12]
+S = np.random.randint(-12, 13, 
                     size=(COMMON_DIM, COLS_S), 
                     dtype=DTYPE_S)
 
@@ -105,7 +105,7 @@ print("-" * 50)
 debug_file_mod = 'debug_trace_C00_mod_step.txt'
 
 row_vec = A_buffer[0, :].astype(np.uint64)
-col_vec = S[:, 0].astype(np.uint64) # 取 S 的第0列，这在 bin 文件中是存储在最开头的那一段数据
+col_vec = S[:, 0].astype(np.int64) # 取 S 的第0列，保持有符号以便调试显示
 
 accumulator_16bit = 0
 common_dim_len = len(row_vec)

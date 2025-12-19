@@ -11,7 +11,7 @@ COLS_S      = 8    # S 的列数 (batch size usually 8)
 
 # --- 2. 定义数据类型 (DTypes) ---
 DTYPE_A = np.uint16  # A 是 16-bit
-DTYPE_S = np.uint8   # S 是 8-bit
+DTYPE_S = np.int8    # S 是 8-bit (signed)
 DTYPE_C = np.uint16  # 结果 C 是 16-bit
 
 print(f"--- FrodoKEM Full Matrix 仿真数据生成器 ---")
@@ -35,8 +35,8 @@ A_full = np.random.randint(0, 2**16,
                            dtype=DTYPE_A)
 
 # 2. 生成 S 矩阵 (逻辑上是 1344 x 8)
-# 范围 [0, 2**8 - 1]
-S = np.random.randint(0, 2**8, 
+# 范围 [-12, 12]
+S = np.random.randint(-12, 13, 
                       size=(COMMON_DIM, COLS_S), 
                       dtype=DTYPE_S)
 
@@ -49,9 +49,9 @@ print(f"  S.shape:      {S.shape}")
 # ==========================================================
 # C = A * S
 print("\n正在计算 Golden Result (矩阵乘法)...")
-# 为了防止溢出，先转为 uint64 计算，然后模 2^16
-A_64 = A_full.astype(np.uint64)
-S_64 = S.astype(np.uint64)
+# 为了防止溢出，先转为 int64 计算 (S是有符号的)，然后模 2^16
+A_64 = A_full.astype(np.int64)
+S_64 = S.astype(np.int64)
 
 C_result_64 = np.dot(A_64, S_64)
 C_result_mod = C_result_64 % (2**16)
@@ -127,8 +127,8 @@ print(f"  -> {file_C_txt}")
 debug_file = 'debug_trace_C00.txt'
 
 # C[0,0] 只与 A 的第0行 和 S 的第0列 有关
-row_vec = A_full[0, :].astype(np.uint64)
-col_vec = S[:, 0].astype(np.uint64)
+row_vec = A_full[0, :].astype(np.int64)
+col_vec = S[:, 0].astype(np.int64)
 
 accumulator = 0
 mod_mask = 2**16

@@ -25,7 +25,7 @@ A_matrix = np.fromfile(FILE_A, dtype=np.uint16).reshape(ROWS_A, COMMON_DIM)
 
 print(f"正在加载 {FILE_S} ...")
 # S_tr 是 8 x 1344
-S_tr_matrix = np.fromfile(FILE_S, dtype=np.uint8).reshape(ROWS_S_TR, COLS_S_TR)
+S_tr_matrix = np.fromfile(FILE_S, dtype=np.int8).reshape(ROWS_S_TR, COLS_S_TR)
 
 print("✅ 数据加载完成。")
 
@@ -34,8 +34,8 @@ print("✅ 数据加载完成。")
 # ==========================================================
 print("\n正在计算完整的 S_tr * A 结果 (Golden Reference)...")
 # 计算矩阵乘法: (8x1344) * (1344x1344) -> (8x1344)
-# 使用 uint64 防止中间累加溢出
-full_result_64 = np.dot(S_tr_matrix.astype(np.uint64), A_matrix.astype(np.uint64))
+# 使用 int64 防止中间累加溢出 (S是有符号的)
+full_result_64 = np.dot(S_tr_matrix.astype(np.int64), A_matrix.astype(np.int64))
 full_result = (full_result_64 % 65536).astype(np.uint16)
 
 # 保存完整结果 (Hex)
@@ -86,8 +86,8 @@ def calculate_partial_outer_product_sum(start_index, steps=4):
     公式: Sum = Sum_{k=i}^{i+steps-1} ( S_tr[:, k] * A[k, :] )
     """
     
-    # 初始化累加器 (使用 uint32 防止溢出，最后再模)
-    accumulator = np.zeros((ROWS_S_TR, ROWS_A), dtype=np.uint32)
+    # 初始化累加器 (使用 int64 防止溢出，最后再模)
+    accumulator = np.zeros((ROWS_S_TR, ROWS_A), dtype=np.int64)
     
     print(f"\n开始计算索引 i = {start_index} 到 {start_index + steps - 1} 的外积和 (共 {steps} 步)...")
     
@@ -97,8 +97,8 @@ def calculate_partial_outer_product_sum(start_index, steps=4):
             continue
             
         # 1. 获取向量
-        s_vec = S_tr_matrix[:, k].astype(np.uint32).reshape(ROWS_S_TR, 1)
-        a_vec = A_matrix[k, :].astype(np.uint32).reshape(1, ROWS_A)
+        s_vec = S_tr_matrix[:, k].astype(np.int64).reshape(ROWS_S_TR, 1)
+        a_vec = A_matrix[k, :].astype(np.int64).reshape(1, ROWS_A)
         
         # 2. 计算外积
         outer_prod = np.dot(s_vec, a_vec)

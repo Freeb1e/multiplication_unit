@@ -23,3 +23,8 @@ see:
 
 clean:
 	rm -rf obj_dir waveform.vcd
+
+diff1:
+	if diff ./testdata/output/Bout.bin ./testdata/output/BGOLDENAS.bin; then echo -e "\033[32mPASS\033[0m"; else echo -e "\033[31mFAIL\033[0m"; fi
+diff2:
+	if diff ./testdata/output/Bout.bin ./testdata/output/BGOLDENSA.bin; then echo -e "\033[32mPASS\033[0m"; else echo -e "\033[31mFAIL\033[0m"; fi

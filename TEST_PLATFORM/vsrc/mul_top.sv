@@ -209,6 +209,8 @@ module mul_top(
                      .state      	(systolic_state       ),
                      .enable     	(systolic_enable      )
                  );
+
+
     //加法器
     wire [16-1:0] sum1;
     wire [16-1:0] sum2;

@@ -5,7 +5,7 @@
 #include "Vplatform_top.h"
 #include "Vplatform_top__Syms.h"
 #include "memory.h"
-#define MAX_SIM_TIME 4000
+#define MAX_SIM_TIME 6000
 vluint64_t sim_time = 0;
 
 Vplatform_top *dut = nullptr;
@@ -122,7 +122,7 @@ int main(int argc, char** argv, char** env) {
     }
 
     dump_file = "./testdata/output/Bout.bin";
-    if(dump_ram_to_bin(dump_file, SP_ram, SP_RAM_SIZE, 1344*8, 1344*8))
+    if(dump_ram_to_bin(dump_file, SP_ram, SP_RAM_SIZE, 1344*8, 1344*8 *2))
     {
         printf("Dumped output data from SP_RAM successfully.\n");
     }

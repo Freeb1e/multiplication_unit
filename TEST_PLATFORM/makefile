@@ -10,7 +10,7 @@ TOP_NAME ?= platform_top
 build:
 # 	clear
 	verilator --trace -cc $(VERILOG) --exe $(CSOURCE) --top-module $(TOP_NAME) -Mdir obj_dir -Ivsrc
-	$(MAKE) -C obj_dir -f V$(TOP_NAME).mk V$(TOP_NAME)
+	$(MAKE) -C obj_dir -f V$(TOP_NAME).mk V$(TOP_NAME) 
 
 run: build
 	./obj_dir/V$(TOP_NAME)

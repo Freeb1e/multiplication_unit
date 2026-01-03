@@ -155,3 +155,60 @@ bool dump_ram_to_bin(const char* filename, const uint8_t* ram_ptr, uint32_t max_
         return false;
     }
 }
+
+bool dump_ram_to_matrix(const char* filename, const uint8_t* ram_ptr, uint32_t max_size, 
+                        uint32_t start_offset, uint32_t rows, uint32_t cols) {
+    
+    // 1. 计算所需数据总量 (每个元素 2 字节)
+    uint32_t bytes_per_item = 2;
+    uint32_t total_bytes_needed = rows * cols * bytes_per_item;
+
+    // 2. 越界检查
+    // 如果 ram_ptr 为空，或者 读取范围超过了 max_size
+    if (ram_ptr == nullptr) {
+        printf("[DPI Error] RAM pointer is NULL\n");
+        return false;
+    }
+    if (start_offset + total_bytes_needed > max_size) {
+        printf("[DPI Error] Dump Matrix out of bounds! Offset:0x%x, Need:%d, Max:%d\n", 
+               start_offset, total_bytes_needed, max_size);
+        return false;
+    }
+
+    // 3. 打开文件
+    FILE* fp = fopen(filename, "w");
+    if (fp == nullptr) {
+        printf("[DPI Error] Cannot open output file %s\n", filename);
+        return false;
+    }
+
+    // 4. 矩阵循环导出
+    uint32_t current_addr_base = start_offset;
+
+    for (uint32_t r = 0; r < rows; r++) {
+        for (uint32_t c = 0; c < cols; c++) {
+            
+            // 计算当前数据的字节地址
+            uint32_t addr = current_addr_base + (r * cols + c) * bytes_per_item;
+
+            // 拼装 16位 数据 (Little Endian: 低地址存低字节)
+            uint8_t lo = ram_ptr[addr];
+            uint8_t hi = ram_ptr[addr + 1];
+            uint16_t val = (uint16_t)lo | ((uint16_t)hi << 8);
+
+            // 写入文件 (4位宽 16进制，大写)
+            // 最后一列不加空格
+            if (c == cols - 1) {
+                fprintf(fp, "%04X", val);
+            } else {
+                fprintf(fp, "%04X ", val);
+            }
+        }
+        // 换行
+        fprintf(fp, "\n");
+    }
+
+    fclose(fp);
+    printf("[DPI Info] Dumped %dx%d Matrix to %s (Offset: 0x%x)\n", rows, cols, filename, start_offset);
+    return true;
+}

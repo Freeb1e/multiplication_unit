@@ -500,7 +500,7 @@ module mem_ctrl(
             end
         end
     end
-    //乒乓转置器的选择
+
     always_ff@(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             transposition_slect <= 1'b1;

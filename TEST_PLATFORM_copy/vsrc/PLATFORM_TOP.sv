@@ -3,11 +3,7 @@ module platform_top(
     input logic rst_n,
     input logic calc_init,
     input logic [2:0] mem_mode,
-    input logic HASH_ready,
-    input logic [31:0] BASE_ADDR_SP,
-    input logic [31:0] BASE_ADDR_HASH,
-    input logic [31:0] BASE_ADDR_B,
-    input logic [10:0] MATRIX_SIZE
+    input logic HASH_ready
 );
 
     logic [31:0] addr_sp;
@@ -33,11 +29,6 @@ module platform_top(
         .rst_n           	(rst_n            ),
         .mem_mode        	(mem_mode         ),
         .calc_init       	(calc_init        ),
-
-        .BASE_ADDR_SP   	(BASE_ADDR_SP ),
-        .BASE_ADDR_HASH 	(BASE_ADDR_HASH  ),
-        .MATRIX_SIZE    	(MATRIX_SIZE ),
-        .BASE_ADDR_B   	    (BASE_ADDR_B),
 
         .bram_data_sp    	(bram_data_sp     ),
         .bram_data_dp    	(bram_data_dp     ),

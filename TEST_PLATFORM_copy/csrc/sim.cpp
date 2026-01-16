@@ -106,10 +106,6 @@ int main(int argc, char** argv, char** env) {
     dut->rst_n = 0;
     dut->calc_init = 0;
     dut->mem_mode = 0;
-    dut->BASE_ADDR_SP = 0;
-    dut->BASE_ADDR_HASH = 0;
-    dut->BASE_ADDR_B = 1344*8*8;
-    dut->MATRIX_SIZE = 336;
     tick();
     dut->rst_n = 1;
     dut->calc_init = 1;
@@ -122,14 +118,10 @@ int main(int argc, char** argv, char** env) {
         dut->clk ^= 1;
         dut->eval();
     #ifdef AS_TEST
-        if(sim_time == 2732){
-            dut->calc_init = 1;
-            dut->BASE_ADDR_SP = 1344*8*4;
-            dut->BASE_ADDR_HASH = 0;
-            dut->BASE_ADDR_B = 1344*8*8 + 64 ;
-        }
-        else if(sim_time == 2735)
-            dut->calc_init = 0;
+        if(sim_time == 3000)
+            dut->HASH_ready = 1;
+        else if(sim_time == 3002)
+            dut->HASH_ready = 0;
     #endif
         m_trace->dump(sim_time);
         sim_time++;

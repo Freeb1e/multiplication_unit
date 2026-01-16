@@ -10,10 +10,6 @@ module mul_top(
         input logic [63:0] bram_data_HASH,
         input logic [63:0] bram_data_sp_2,
 
-        input logic [31:0] BASE_ADDR_SP,
-        input logic [31:0] BASE_ADDR_HASH,
-        input logic [10:0] MATRIX_SIZE,
-        input logic [31:0] BASE_ADDR_B,
         output logic [31:0] addr_sp,
         output logic [31:0] addr_dp,
         output logic [31:0] addr_HASH,
@@ -45,7 +41,15 @@ module mul_top(
     logic transposition_dir;
     logic systolic_enable;
     logic transposition_rst_sync;
-    mem_ctrl u_mem_ctrl(
+    mem_ctrl #(
+                 .IDLE              	(0   ),
+                 .AS                	(1   ),
+                 .SA                	(2   ),
+                 .SB                	(3   ),
+                 .BS                	(4   ),
+                 .Frodo_standard_A  	(32'd1344*16  ),
+                 .Frodo_standard_SE 	(32'd1344*8  ))
+             u_mem_ctrl(
                  .clk            	(clk             ),
                  .rst_n          	(rst_n           ),
                  .mem_mode       	(mem_mode        ),
@@ -72,11 +76,7 @@ module mul_top(
                  .transposition_dir (transposition_dir),
                  .systolic_enable     (systolic_enable),
                  .transposition_rst_sync (transposition_rst_sync),
-                 .bram_data_sp_2        (bram_data_sp_2),
-                 .BASE_ADDR_SP   	(BASE_ADDR_SP ),
-                 .BASE_ADDR_HASH 	(BASE_ADDR_HASH),
-                 .MATRIX_SIZE    	(MATRIX_SIZE ),
-                 .BASE_ADDR_B   	(BASE_ADDR_B)
+                 .bram_data_sp_2        (bram_data_sp_2)
              );
 
     // 左矩阵转置器
@@ -109,8 +109,8 @@ module mul_top(
                                   .rst_sync (transposition_rst_sync)
                               );
     //右矩阵转置器
-    logic [63:0] HALF_SLECT_DATA;
-    assign HALF_SLECT_DATA = (~delayaddr5) ? {
+    logic [63:0] b_mult_in;
+    assign b_mult_in = (~delayaddr5) ? {
                {8{data_right[31]}}, data_right[31:24],  // Byte 3 -> [63:48]
                {8{data_right[23]}}, data_right[23:16],  // Byte 2 -> [47:32]
                {8{data_right[15]}}, data_right[15:8],   // Byte 1 -> [31:16]
@@ -138,7 +138,7 @@ module mul_top(
     assign transposition_mode_3 = transposition_slect ? 1'b1 : 1'b0;
     assign transposition_mode_4 = transposition_slect ? 1'b0 : 1'b1;
     logic [63:0] data_right_processed;
-    assign data_right_processed =(current_state == SA_calculate1||current_state==SA_calculate2) ? sum_out : HALF_SLECT_DATA;
+    assign data_right_processed =(current_state == SA_calculate1||current_state==SA_calculate2) ? sum_out : b_mult_in;
     transposition_top_dynamic #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
@@ -176,7 +176,7 @@ module mul_top(
 
     always_comb begin
         case(current_state)
-            AS_SQUARE,AS_SAVE: begin
+            AS_SQUARE,AS_SAVE,AS_WAITHASH: begin
                 a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
                 b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
             end
@@ -190,7 +190,7 @@ module mul_top(
             end
             default: begin
                 a_in_raw = 64'd0 ;
-                b_in_raw = HALF_SLECT_DATA;
+                b_in_raw = b_mult_in;
             end
         endcase
     end
@@ -244,6 +244,8 @@ module mul_top(
                 .rst_n 	(rst_n  )
             );
     always_comb begin
+        if(current_state == SA_calculate1 || current_state==SA_calculate2) begin
             bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
+        end else bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
     end
 endmodule

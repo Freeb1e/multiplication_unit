@@ -90,7 +90,7 @@ void init_SA_test()
         printf("Failed to load B matrix 0 data into HASH RAM.\n");
     }
 }
-  #define AS_TEST
+  //#define AS_TEST
 int main(int argc, char** argv, char** env) {
 
     dut = new Vplatform_top;
@@ -130,6 +130,16 @@ int main(int argc, char** argv, char** env) {
         }
         else if(sim_time == 2735)
             dut->calc_init = 0;
+    #else
+        if(sim_time == 2737){
+            dut->calc_init = 1;
+            dut->BASE_ADDR_SP = 1344*8*4;
+            dut->BASE_ADDR_HASH = 0;
+            dut->BASE_ADDR_B = 1344*8*8 + 1344*16*4;
+        }
+        else if(sim_time == 2740){
+            dut->calc_init = 0;
+        }
     #endif
         m_trace->dump(sim_time);
         sim_time++;

@@ -40,8 +40,11 @@ module mul_top(
     logic transposition_mode_3,transposition_mode_4;
 
     logic [3:0] current_state;
-    parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate1=4'd6,SA_calculate2=4'd7,SA_WAITHASH=4'd8;
-    parameter DEBUG=4'd15;
+    // parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate1=4'd6,SA_calculate2=4'd7,SA_WAITHASH=4'd8;
+    // parameter DEBUG=4'd15;
+    parameter IDLE=4'd0;
+    parameter AS_CALC=4'd1,AS_SAVE=4'd2;
+    parameter SA_LOADWEIGHT=4'd3,SA_CALC=4'd4;
     logic transposition_dir;
     logic systolic_enable;
     logic transposition_rst_sync;
@@ -138,7 +141,7 @@ module mul_top(
     assign transposition_mode_3 = transposition_slect ? 1'b1 : 1'b0;
     assign transposition_mode_4 = transposition_slect ? 1'b0 : 1'b1;
     logic [63:0] data_right_processed;
-    assign data_right_processed =(current_state == SA_calculate1||current_state==SA_calculate2) ? sum_out : HALF_SLECT_DATA;
+    assign data_right_processed =(current_state == SA_CALC) ? sum_out : HALF_SLECT_DATA;
     transposition_top_dynamic #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
@@ -176,15 +179,15 @@ module mul_top(
 
     always_comb begin
         case(current_state)
-            AS_SQUARE,AS_SAVE: begin
+            AS_CALC,AS_SAVE: begin
                 a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
                 b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
             end
-            SA_loadweight1,SA_loadweight2: begin
-                a_in_raw = 64'd0 ;
-                b_in_raw = transposition_slect ? martix_out_transposition_3 : martix_out_transposition_4 ;
+            SA_LOADWEIGHT: begin
+                a_in_raw = HALF_SLECT_DATA ;
+                b_in_raw = 64'd0;
             end
-            SA_calculate1,SA_calculate2: begin
+            SA_CALC: begin
                 a_in_raw = transposition_slect ? martix_out_transposition_1 : martix_out_transposition_2 ;
                 b_in_raw = 0;
             end
@@ -219,7 +222,7 @@ module mul_top(
     logic [4*16-1:0] data_adder;
     logic [4*16-1:0] sum_out_mux;
     always_comb begin
-        if(current_state == SA_calculate1 || current_state == SA_calculate2)begin
+        if(current_state == SA_CALC)begin
             sum_out_mux = sum_out_transposed;
         end else begin
             sum_out_mux = sum_out;

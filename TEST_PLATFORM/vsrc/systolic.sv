@@ -54,7 +54,7 @@ module systolic_top#(
                           .clk(clk),
                           .rst_n(rst_n),
                           .din(a_in[(k+1)*DATA_WIDTH-1:k*DATA_WIDTH]),
-                          .delay_switch(1'b1),
+                          .delay_switch(state || mode),
                           .dout(a_reg_delayed[k])
                       );
         end
@@ -155,7 +155,8 @@ module systolic_pe#(
             end
             else begin
                 if(state==1'b0) begin
-                    b_reg<= b_wire;
+                    b_reg<= a_wire;
+                    a_reg<= a_wire;
                 end
                 else begin
                     a_reg<= a_wire;

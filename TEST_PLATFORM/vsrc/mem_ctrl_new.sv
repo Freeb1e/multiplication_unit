@@ -69,8 +69,9 @@ module mem_ctrl(
         end
     end
     assign systolic_enable = 1'b1;
-     /* verilator lint_off WIDTH */
+    /* verilator lint_off WIDTH */
     always_comb begin
+        counter_init = 1'b0;
         case (current_state)
             IDLE: begin
                 if(calc_init) begin
@@ -94,7 +95,20 @@ module mem_ctrl(
                 end
                 else
                     next_state=AS_SAVE;
-                    
+            SA_LOADWEIGHT: begin
+                if(cnt_line == 32'd1) begin
+                    next_state=SA_CALC;
+                    counter_init =1'b1;
+                end
+                else
+                    next_state=SA_LOADWEIGHT;
+            end
+            SA_CALC: begin
+                if(cnt_line == matrix_size_reg + 4 && count_4==2'b1) begin
+                    next_state=IDLE;
+                end else
+                next_state=SA_CALC;
+            end
             default:
                 next_state=IDLE;
         endcase
@@ -107,7 +121,7 @@ module mem_ctrl(
         end
         else begin // 0:数据传输 1:计算
             if(calc_init) begin
-                systolic_mode <= (mem_mode == 1 || mem_mode == 2) ? 1'b1 : 1'b0;
+                systolic_mode <= (mem_mode == 3'd1) ? 1'b1 : 1'b0;
             end
             case(current_state)
                 AS_CALC:
@@ -117,19 +131,18 @@ module mem_ctrl(
                         systolic_state <= 1'b0;
                     end
                 end
+                SA_LOADWEIGHT: begin
+                    systolic_state <= 1'b0;
+                end
+                SA_CALC: begin
+                    systolic_state <= 1'b1;
+                end
                 default: begin
                     systolic_state <= systolic_state;
                 end
             endcase
         end
     end
-    always_ff@(posedge clk or negedge rst_n) begin
-        if(!rst_n)begin
-            counter_init <=1'b0;
-        end else begin
-            counter_init <=1'b0;
-            end
-        end
     logic [1:0] count_4;
     always_ff @(posedge clk or negedge rst_n) begin
         if(!rst_n) begin
@@ -150,7 +163,7 @@ module mem_ctrl(
             cnt_line<='b0;
         end
         else begin
-            if(calc_init) begin
+            if(calc_init || counter_init) begin
                 cnt_line<='b0;
             end
             else begin
@@ -165,11 +178,16 @@ module mem_ctrl(
     end
 
     logic [1:0] save_bias,save_bias_w;
-
     assign save_bias = 2'b10 - count_4;
     assign save_bias_w = save_bias+2'd2;
+    logic [1:0] save_bias_SA;
+    assign save_bias_SA = count_4-2'd2;
     /* verilator lint_off WIDTH */
     always_comb begin
+        addr_dp = 32'd0;
+        addr_sp = 32'd0;
+        addr_HASH = 32'd0;
+        addr_sp_2 = 32'd0;
         case(current_state)
             AS_CALC: begin
                 addr_HASH =BASE_ADDR_HASH_REG+cnt_line*32'd64+count_4*Frodo_standard_A;
@@ -179,6 +197,17 @@ module mem_ctrl(
                 addr_sp = BASE_ADDR_B_REG +save_bias*16*8;
                 addr_sp_2 = BASE_ADDR_B_REG +(save_bias_w)*16*8;
             end
+            SA_LOADWEIGHT: begin
+                addr_sp = BASE_ADDR_SP + (2'd3-count_4)*Frodo_standard_SE;
+            end
+            SA_CALC: begin
+                addr_HASH = BASE_ADDR_HASH_REG + cnt_line*32'd64 + count_4*Frodo_standard_A;
+                if(count_4==2 || count_4 == 3)
+                    addr_sp_2 = BASE_ADDR_B_REG + (cnt_line-32'd4) * 32'd64 + save_bias_SA*Frodo_standard_A;
+                else
+                    addr_sp_2 = BASE_ADDR_B_REG + (cnt_line-32'd5) * 32'd64 + save_bias_SA*Frodo_standard_A;
+                addr_sp=BASE_ADDR_B_REG + (cnt_line-32'd4) * 32'd64 + count_4*Frodo_standard_A;
+            end
             default: begin
                 addr_dp = 32'd0;
                 addr_sp = 32'd0;
@@ -187,7 +216,7 @@ module mem_ctrl(
             end
         endcase
     end
-     /* verilator lint_on WIDTH */
+    /* verilator lint_on WIDTH */
     always_comb begin
         data_adder = bram_data_sp;
         case(current_state)
@@ -197,6 +226,14 @@ module mem_ctrl(
             end
             AS_SAVE: begin
                 data_left = 64'd0;
+                data_right = 64'd0;
+            end
+            SA_LOADWEIGHT: begin
+                data_left = 64'd0;
+                data_right = bram_data_sp;
+            end
+            SA_CALC: begin
+                data_left = bram_data_HASH;
                 data_right = 64'd0;
             end
             default: begin
@@ -211,6 +248,17 @@ module mem_ctrl(
             AS_SAVE: begin
                 wen_sp_2 =(cnt_line==matrix_size_reg + 32'd3 && count_4>0)||(cnt_line ==matrix_size_reg + 32'd4 && count_4 == 0)? 1'b1 : 1'b0;
             end
+            SA_CALC: begin
+                if (cnt_line == 4) begin
+                    wen_sp_2 = (count_4 > 1);
+                end
+                else if (cnt_line > 4 && cnt_line < matrix_size_reg + 32'd4) begin
+                    wen_sp_2 = 1'b1;
+                end
+                else if (cnt_line == matrix_size_reg + 32'd4) begin
+                    wen_sp_2 = (count_4 < 2);
+                end
+            end
             default: begin
                 wen_sp = 1'd0;
                 wen_dp = 1'd0;
@@ -222,7 +270,7 @@ module mem_ctrl(
 
 
     always_comb begin
-                transposition_dir = 1'b0;
+        transposition_dir = 1'b0;
     end
 
     always_ff@(posedge clk or negedge rst_n) begin

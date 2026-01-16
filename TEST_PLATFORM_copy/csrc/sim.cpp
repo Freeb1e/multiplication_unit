@@ -90,7 +90,7 @@ void init_SA_test()
         printf("Failed to load B matrix 0 data into HASH RAM.\n");
     }
 }
-  #define AS_TEST
+ // #define AS_TEST
 int main(int argc, char** argv, char** env) {
 
     dut = new Vplatform_top;

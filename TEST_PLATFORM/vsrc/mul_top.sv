@@ -72,7 +72,6 @@ module mul_top(
                  .current_state  	(current_state   ),
                  .addr_sp_2      	(addr_sp_2       ),
                  .wen_sp_2       	(wen_sp_2        ),
-                 .transposition_dir (transposition_dir),
                  .systolic_enable     (systolic_enable),
                  .transposition_rst_sync (transposition_rst_sync),
                  .bram_data_sp_2        (bram_data_sp_2),
@@ -86,7 +85,7 @@ module mul_top(
     assign transposition_mode_1 = transposition_slect ? 1'b1 : 1'b0;
     assign transposition_mode_2 = transposition_slect ? 1'b0 : 1'b1;
 
-    transposition_top_dynamic #(
+    transposition_top_default #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
                               u_transposition_top_default_1(
@@ -95,11 +94,11 @@ module mul_top(
                                   .martix_in  	(data_left   ),
                                   .martix_out 	(martix_out_transposition_1  ),
                                   .mode       	(transposition_mode_1        ),
-                                  .dir        (transposition_dir       ),
+                                  //.dir        (transposition_dir       ),
                                   .rst_sync (transposition_rst_sync)
                               );
 
-    transposition_top_dynamic #(
+    transposition_top_default #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
                               u_transposition_top_default_2(
@@ -108,7 +107,7 @@ module mul_top(
                                   .martix_in  	(data_left   ),
                                   .martix_out 	(martix_out_transposition_2  ),
                                   .mode       	(transposition_mode_2      ),
-                                  .dir        (transposition_dir      ),
+                                  //.dir        (transposition_dir      ),
                                   .rst_sync (transposition_rst_sync)
                               );
     //右矩阵转置器
@@ -142,7 +141,7 @@ module mul_top(
     assign transposition_mode_4 = transposition_slect ? 1'b0 : 1'b1;
     logic [63:0] data_right_processed;
     assign data_right_processed =(current_state == SA_CALC) ? sum_out : HALF_SLECT_DATA;
-    transposition_top_dynamic #(
+    transposition_top_default #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
                               u_transposition_top_default_3(
@@ -151,11 +150,11 @@ module mul_top(
                                   .martix_in  	(data_right_processed  ),
                                   .martix_out 	(martix_out_transposition_3  ),
                                   .mode       	(transposition_mode_3        ),
-                                  .dir        (transposition_dir       ),
+                                  //.dir        (transposition_dir       ),
                                   .rst_sync (transposition_rst_sync)
                               );
 
-    transposition_top_dynamic #(
+    transposition_top_default #(
                                   .DATA_WIDTH     	(16  ),
                                   .SYSTOLIC_WIDTH 	(4   ))
                               u_transposition_top_default_4(
@@ -164,7 +163,7 @@ module mul_top(
                                   .martix_in  	(data_right_processed    ),
                                   .martix_out 	(martix_out_transposition_4  ),
                                   .mode       	(transposition_mode_4      ),
-                                  .dir        (transposition_dir       ),
+                                  //.dir        (transposition_dir       ),
                                   .rst_sync (transposition_rst_sync)
                               );
     logic [63:0] sum_out_transposed;

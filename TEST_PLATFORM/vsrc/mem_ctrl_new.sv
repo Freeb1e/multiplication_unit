@@ -35,7 +35,6 @@ module mem_ctrl(
         input logic HASH_ready,
         output logic [3:0] current_state,
 
-        output logic transposition_dir,
         output logic transposition_slect,
         output logic transposition_rst_sync
     );
@@ -266,11 +265,6 @@ module mem_ctrl(
                 wen_sp_2 = 1'd0;
             end
         endcase
-    end
-
-
-    always_comb begin
-        transposition_dir = 1'b0;
     end
 
     always_ff@(posedge clk or negedge rst_n) begin

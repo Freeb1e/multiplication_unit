@@ -5,26 +5,22 @@ module mul_top(
         input logic rst_n,
         input logic [2:0] mem_mode,//0:idle 1:AS 2:SA 3:SB 4:BS
         input logic calc_init,
-        input logic [63:0] bram_data_sp,
-        input logic [63:0] bram_data_dp,
+        input logic [63:0] bram_data_sb,
         input logic [63:0] bram_data_HASH,
-        input logic [63:0] bram_data_sp_2,
+        input logic [63:0] bram_data_sb_2,
 
-        input logic [31:0] BASE_ADDR_SP,
+        input logic [31:0] BASE_ADDR_S,
         input logic [31:0] BASE_ADDR_HASH,
         input logic [10:0] MATRIX_SIZE,
         input logic [31:0] BASE_ADDR_B,
-        output logic [31:0] addr_sp,
-        output logic [31:0] addr_dp,
+        output logic [31:0] addr_sb,
         output logic [31:0] addr_HASH,
-        output logic [31:0] addr_sp_2,
-        output logic wen_sp,
-        output logic wen_dp,
+        output logic [31:0] addr_sb_2,
+        output logic wen_sb,
         output logic wen_HASH,
-        output logic wen_sp_2,
-        output logic [63:0] bram_wdata_sp,
-        output logic [63:0] bram_wdata_sp_2,
-        output logic [63:0] bram_wdata_dp,
+        output logic wen_sb_2,
+        output logic [63:0] bram_wdata_sb,
+        output logic [63:0] bram_wdata_sb_2,
         output logic [63:0] bram_wdata_HASH,
         input logic HASH_ready
     );
@@ -53,29 +49,26 @@ module mul_top(
                  .rst_n          	(rst_n           ),
                  .mem_mode       	(mem_mode        ),
                  .calc_init      	(calc_init       ),
-                 .bram_data_sp   	(bram_data_sp    ),
-                 .bram_data_dp   	(bram_data_dp    ),
+                 .bram_data_sb   	(bram_data_sb    ),
                  .bram_data_HASH 	(bram_data_HASH  ),
                  .data_left      	(data_left       ),
                  .data_right     	(data_right      ),
-                 .addr_sp        	(addr_sp         ),
-                 .addr_dp        	(addr_dp         ),
+                 .addr_sb        	(addr_sb         ),
                  .addr_HASH      	(addr_HASH       ),
                  .transposition_slect  (transposition_slect    ),
                  .systolic_state   	(systolic_state     ),
                  .systolic_mode   	(systolic_mode),
                  .data_adder     	(data_adder),
-                 .wen_sp         	(wen_sp          ),
-                 .wen_dp         	(wen_dp          ),
+                 .wen_sb         	(wen_sb          ),
                  .wen_HASH       	(wen_HASH),
                  .HASH_ready     	(HASH_ready      ),
                  .current_state  	(current_state   ),
-                 .addr_sp_2      	(addr_sp_2       ),
-                 .wen_sp_2       	(wen_sp_2        ),
+                 .addr_sb_2      	(addr_sb_2       ),
+                 .wen_sb_2       	(wen_sb_2        ),
                  .systolic_enable     (systolic_enable),
                  .transposition_rst_sync (transposition_rst_sync),
-                 .bram_data_sp_2        (bram_data_sp_2),
-                 .BASE_ADDR_SP   	(BASE_ADDR_SP ),
+                 .bram_data_sb_2        (bram_data_sb_2),
+                 .BASE_ADDR_S   	(BASE_ADDR_S ),
                  .BASE_ADDR_HASH 	(BASE_ADDR_HASH),
                  .MATRIX_SIZE    	(MATRIX_SIZE ),
                  .BASE_ADDR_B   	(BASE_ADDR_B)
@@ -131,7 +124,7 @@ module mul_top(
               u_delay_reg(
                   .clk          	(clk           ),
                   .rst_n        	(rst_n         ),
-                  .din          	(addr_sp[5]           ),
+                  .din          	(addr_sb[5]           ),
                   .delay_switch 	(1'b1  ),
                   .dout         	(delayaddr5          )
               );
@@ -246,6 +239,6 @@ module mul_top(
                 .rst_n 	(rst_n  )
             );
     always_comb begin
-            bram_wdata_sp_2 = {sum4, sum3, sum2, sum1};
+            bram_wdata_sb_2 = {sum4, sum3, sum2, sum1};
     end
 endmodule

@@ -5,7 +5,7 @@
 #include "Vplatform_top.h"
 #include "Vplatform_top__Syms.h"
 #include "memory.h"
-#define MAX_SIM_TIME 6000
+#define MAX_SIM_TIME 6000*2
 vluint64_t sim_time = 0;
 
 Vplatform_top *dut = nullptr;
@@ -90,7 +90,7 @@ void init_SA_test()
         printf("Failed to load B matrix 0 data into HASH RAM.\n");
     }
 }
-  #define AS_TEST
+//  #define AS_TEST
 int main(int argc, char** argv, char** env) {
 
     dut = new Vplatform_top;
@@ -106,7 +106,7 @@ int main(int argc, char** argv, char** env) {
     dut->rst_n = 0;
     dut->calc_init = 0;
     dut->mem_mode = 0;
-    dut->BASE_ADDR_SP = 0;
+    dut->BASE_ADDR_S = 0;
     dut->BASE_ADDR_HASH = 0;
     dut->BASE_ADDR_B = 1344*8*8;
     dut->MATRIX_SIZE = 336;
@@ -124,7 +124,7 @@ int main(int argc, char** argv, char** env) {
     #ifdef AS_TEST
         if(sim_time == 2732){
             dut->calc_init = 1;
-            dut->BASE_ADDR_SP = 1344*8*4;
+            dut->BASE_ADDR_S = 1344*8*4;
             dut->BASE_ADDR_HASH = 0;
             dut->BASE_ADDR_B = 1344*8*8 + 64 ;
         }
@@ -133,11 +133,30 @@ int main(int argc, char** argv, char** env) {
     #else
         if(sim_time == 2737){
             dut->calc_init = 1;
-            dut->BASE_ADDR_SP = 1344*8*4;
+            dut->BASE_ADDR_S = 1344*8*4;
             dut->BASE_ADDR_HASH = 0;
             dut->BASE_ADDR_B = 1344*8*8 + 1344*16*4;
         }
         else if(sim_time == 2740){
+            dut->calc_init = 0;
+        }
+        //===============================
+                if(sim_time == 2737*2){
+            dut->calc_init = 1;
+            dut->BASE_ADDR_S = 0+32;
+            dut->BASE_ADDR_HASH = 1344*16*4;
+            dut->BASE_ADDR_B = 1344*8*8 ;
+        }
+        else if(sim_time == 2740*2){
+            dut->calc_init = 0;
+        }
+                if(sim_time == 2737*3){
+            dut->calc_init = 1;
+            dut->BASE_ADDR_S = 1344*8*4+32;
+            dut->BASE_ADDR_HASH = 1344*16*4;
+            dut->BASE_ADDR_B = 1344*8*8 + 1344*16*4;
+        }
+        else if(sim_time == 2740*3){
             dut->calc_init = 0;
         }
     #endif

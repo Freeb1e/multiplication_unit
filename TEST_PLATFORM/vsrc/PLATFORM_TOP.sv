@@ -4,25 +4,24 @@ module platform_top(
     input logic calc_init,
     input logic [2:0] mem_mode,
     input logic HASH_ready,
-    input logic [31:0] BASE_ADDR_S,
-    input logic [31:0] BASE_ADDR_HASH,
-    input logic [31:0] BASE_ADDR_B,
+    input logic [31:0] BASE_ADDR_LEFT,
+    input logic [31:0] BASE_ADDR_RIGHT,
+    input logic [31:0] BASE_ADDR_ADDSRC,
+    input logic [31:0] BASE_ADDR_SAVE,
     input logic [10:0] MATRIX_SIZE
 );
-
-    logic [31:0] addr_sb;
-    logic [31:0] addr_HASH;
-    logic [31:0] addr_sb_2;
-    logic wen_sb;
-    logic wen_HASH;
-    logic wen_sb_2;
-    logic [63:0] bram_wdata_sb;
-    logic [63:0] bram_wdata_sb_2;
-    logic [63:0] bram_wdata_HASH;
-
-    logic [63:0] bram_data_sb;
-    logic [63:0] bram_data_HASH;
-    logic [63:0] bram_data_sb_2;
+    parameter IDLE=4'd0;
+    parameter AS_CALC=4'd1,AS_SAVE=4'd2;
+    parameter SA_LOADWEIGHT=4'd3,SA_CALC=4'd4;
+    logic [63:0] bram_data_1;
+    logic [63:0] bram_data_2;
+    logic [63:0] bram_data_3;
+    logic [31:0] bram_addr_1;
+    logic [31:0] bram_addr_2;
+    logic [31:0] bram_addr_3;
+    logic [3:0] current_state;
+    logic save_wen;
+    logic [63:0] bram_savedata;
     
     mul_top u_mul_top(
         .clk             	(clk              ),
@@ -30,31 +29,95 @@ module platform_top(
         .mem_mode        	(mem_mode         ),
         .calc_init       	(calc_init        ),
 
-        .BASE_ADDR_S   	(BASE_ADDR_S ),
-        .BASE_ADDR_HASH 	(BASE_ADDR_HASH  ),
-        .MATRIX_SIZE    	(MATRIX_SIZE ),
-        .BASE_ADDR_B   	    (BASE_ADDR_B),
+        .bram_data_1       (bram_data_1       ),
+        .bram_data_2       (bram_data_2       ),
+        .bram_data_3       (bram_data_3       ),
 
-        .bram_data_sb    	(bram_data_sb     ),
-        .bram_data_HASH  	(bram_data_HASH   ),
-        .bram_data_sb_2  	(bram_data_sb_2   ),
+        .BASE_ADDR_LEFT   	(BASE_ADDR_LEFT    ),
+        .BASE_ADDR_RIGHT  	(BASE_ADDR_RIGHT   ),
+        .BASE_ADDR_ADDSRC 	(BASE_ADDR_ADDSRC  ),
+        .BASE_ADDR_SAVE   	(BASE_ADDR_SAVE    ),
+        .MATRIX_SIZE     	(MATRIX_SIZE      ),
 
-        .addr_sb         	(addr_sb          ),
-        .addr_HASH       	(addr_HASH        ),
-        .addr_sb_2       	(addr_sb_2        ),
+        .bram_addr_1      	(bram_addr_1       ),
+        .bram_addr_2      	(bram_addr_2       ),
+        .bram_addr_3      	(bram_addr_3       ),
 
-        .wen_sb          	(wen_sb           ),
-        .wen_HASH        	(wen_HASH         ),
-        .wen_sb_2        	(wen_sb_2         ),
+        .current_state    	(current_state     ),
 
-        .bram_wdata_sb   	(bram_wdata_sb    ),
-        .bram_wdata_sb_2 	(bram_wdata_sb_2  ),
-        .bram_wdata_HASH 	(bram_wdata_HASH  ),
-
-        .HASH_ready      	(HASH_ready       )
+        .save_wen        	(save_wen         ),
+        .bram_savedata     	(bram_savedata      )
     );
     
-    
+    always_comb begin
+                    addr_HASH = 32'd0;
+            addr_sb = 32'd0;
+            addr_sb_2 = 32'd0;
+            wen_sb = 1'b0;
+            wen_sb_2 = 1'b0;
+            bram_wdata_sb = 64'd0;
+            bram_wdata_sb_2 = 64'd0;
+
+            bram_data_1 = 64'd0;
+            bram_data_2 = 64'd0;
+            bram_data_3 = 64'd0;
+        case(current_state)
+        AS_CALC: begin
+            addr_HASH = bram_addr_1;
+            addr_sb = bram_addr_2;
+            wen_sb = 1'b0;
+            wen_sb_2 = 1'b0;
+            bram_wdata_sb = 64'd0;
+            bram_data_1 = bram_data_HASH;
+            bram_data_2 = bram_data_sb;
+        end
+        AS_SAVE: begin
+            addr_sb = bram_addr_1;
+            addr_sb_2 = bram_addr_2;
+            bram_wdata_sb_2 = bram_savedata;
+            bram_data_1 = bram_data_sb;
+            wen_sb_2 = save_wen;
+        end
+        SA_LOADWEIGHT: begin
+            addr_sb = bram_addr_1;
+            bram_data_1 = bram_data_sb;
+        end
+        SA_CALC: begin
+            addr_sb = bram_addr_1;
+            addr_sb_2 = bram_addr_2;
+            addr_HASH = bram_addr_3;
+
+            bram_data_1 = bram_data_sb;
+            bram_wdata_sb_2 = bram_savedata;
+            wen_sb_2 = save_wen;
+            bram_data_3 = bram_data_HASH;
+        end
+        default: begin
+            addr_HASH = 32'd0;
+            addr_sb = 32'd0;
+            addr_sb_2 = 32'd0;
+            wen_sb = 1'b0;
+            wen_sb_2 = 1'b0;
+            bram_wdata_sb = 64'd0;
+            bram_wdata_sb_2 = 64'd0;
+
+            bram_data_1 = 64'd0;
+            bram_data_2 = 64'd0;
+            bram_data_3 = 64'd0;
+        end
+        endcase
+    end
+
+    logic [31:0] addr_HASH;
+    logic [31:0] addr_sb;
+    logic [31:0] addr_sb_2;
+    logic [63:0] bram_wdata_sb;
+    logic [63:0] bram_wdata_sb_2;
+    logic wen_sb;
+    logic wen_sb_2;
+    logic [63:0] bram_data_HASH;
+    logic [63:0] bram_data_sb;
+    logic [63:0] bram_data_sb_2;
     block_ram_dpi #(
         .BRAM_ID 	(0  ))
     HASH_RAM(

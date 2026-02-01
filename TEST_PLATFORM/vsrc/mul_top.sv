@@ -5,24 +5,25 @@ module mul_top(
         input logic rst_n,
         input logic [2:0] mem_mode,//0:idle 1:AS 2:SA 3:SB 4:BS
         input logic calc_init,
-        input logic [63:0] bram_data_sb,
-        input logic [63:0] bram_data_HASH,
-        input logic [63:0] bram_data_sb_2,
 
-        input logic [31:0] BASE_ADDR_S,
-        input logic [31:0] BASE_ADDR_HASH,
+        input logic [63:0] bram_data_1,
+        input logic [63:0] bram_data_2,
+        input logic [63:0] bram_data_3,
+
+        input logic [31:0] BASE_ADDR_LEFT,
+        input logic [31:0] BASE_ADDR_RIGHT,
+        input logic [31:0] BASE_ADDR_ADDSRC,
+        input logic [31:0] BASE_ADDR_SAVE,
         input logic [10:0] MATRIX_SIZE,
-        input logic [31:0] BASE_ADDR_B,
-        output logic [31:0] addr_sb,
-        output logic [31:0] addr_HASH,
-        output logic [31:0] addr_sb_2,
-        output logic wen_sb,
-        output logic wen_HASH,
-        output logic wen_sb_2,
-        output logic [63:0] bram_wdata_sb,
-        output logic [63:0] bram_wdata_sb_2,
-        output logic [63:0] bram_wdata_HASH,
-        input logic HASH_ready
+        
+        output logic [31:0] bram_addr_1,
+        output logic [31:0] bram_addr_2,
+        output logic [31:0] bram_addr_3,
+
+        output logic [3:0] current_state,
+
+        output logic save_wen,
+        output logic [63:0] bram_savedata
     );
     logic [63:0] data_left;
     logic [63:0] data_right;
@@ -35,7 +36,6 @@ module mul_top(
     logic [4*16-1:0] martix_out_transposition_3,martix_out_transposition_4;
     logic transposition_mode_3,transposition_mode_4;
 
-    logic [3:0] current_state;
     // parameter FREE=4'd0,AS_SQUARE=4'd1,AS_SAVE=4'd2,AS_WAITHASH=4'd3,SA_loadweight1=4'd4,SA_loadweight2=4'd5,SA_calculate1=4'd6,SA_calculate2=4'd7,SA_WAITHASH=4'd8;
     // parameter DEBUG=4'd15;
     parameter IDLE=4'd0;
@@ -49,29 +49,37 @@ module mul_top(
                  .rst_n          	(rst_n           ),
                  .mem_mode       	(mem_mode        ),
                  .calc_init      	(calc_init       ),
-                 .bram_data_sb   	(bram_data_sb    ),
-                 .bram_data_HASH 	(bram_data_HASH  ),
+   
+                 .BASE_ADDR_LEFT    (BASE_ADDR_LEFT    ),
+                 .BASE_ADDR_RIGHT   (BASE_ADDR_RIGHT   ),
+                 .BASE_ADDR_ADDSRC  (BASE_ADDR_ADDSRC  ),
+                 .BASE_ADDR_SAVE  	(BASE_ADDR_SAVE   ),
+                 .MATRIX_SIZE    	(MATRIX_SIZE     ),
+
+                 .bram_data_1    	(bram_data_1     ),
+                 .bram_data_2    	(bram_data_2     ),
+                 .bram_data_3    	(bram_data_3     ),
+
+                 .bram_addr_1    	(bram_addr_1     ),
+                 .bram_addr_2    	(bram_addr_2     ),
+                 .bram_addr_3    	(bram_addr_3     ),
+
+                 .save_wen       	(save_wen        ),
+
+
                  .data_left      	(data_left       ),
                  .data_right     	(data_right      ),
-                 .addr_sb        	(addr_sb         ),
-                 .addr_HASH      	(addr_HASH       ),
-                 .transposition_slect  (transposition_slect    ),
-                 .systolic_state   	(systolic_state     ),
+
+                 .systolic_state   (systolic_state     ),
                  .systolic_mode   	(systolic_mode),
-                 .data_adder     	(data_adder),
-                 .wen_sb         	(wen_sb          ),
-                 .wen_HASH       	(wen_HASH),
-                 .HASH_ready     	(HASH_ready      ),
-                 .current_state  	(current_state   ),
-                 .addr_sb_2      	(addr_sb_2       ),
-                 .wen_sb_2       	(wen_sb_2        ),
                  .systolic_enable     (systolic_enable),
-                 .transposition_rst_sync (transposition_rst_sync),
-                 .bram_data_sb_2        (bram_data_sb_2),
-                 .BASE_ADDR_S   	(BASE_ADDR_S ),
-                 .BASE_ADDR_HASH 	(BASE_ADDR_HASH),
-                 .MATRIX_SIZE    	(MATRIX_SIZE ),
-                 .BASE_ADDR_B   	(BASE_ADDR_B)
+                 .data_adder     	(data_adder),
+
+                 .current_state  	(current_state   ),
+
+                 .transposition_slect  (transposition_slect    ),
+                 .transposition_rst_sync (transposition_rst_sync)
+
              );
 
     // 左矩阵转置器
@@ -117,19 +125,36 @@ module mul_top(
                {8{data_right[39]}}, data_right[39:32]   // Byte 4 -> [15:0]
            };
     logic delayaddr5;
-
+    logic set_addr;
     delay_reg #(
                   .DATA_WIDTH   	(1  ),
                   .DELAY_CYCLES 	(1   ))
               u_delay_reg(
                   .clk          	(clk           ),
                   .rst_n        	(rst_n         ),
-                  .din          	(addr_sb[5]           ),
+                  .din          	(set_addr          ),
                   .delay_switch 	(1'b1  ),
                   .dout         	(delayaddr5          )
               );
 
-
+    always_comb begin
+        case(current_state)
+        AS_CALC: begin
+            set_addr=bram_addr_2[5];
+        end
+        AS_SAVE: begin
+            set_addr=bram_addr_1[5];
+        end
+        SA_LOADWEIGHT: begin
+            set_addr=bram_addr_1[5];
+        end
+        SA_CALC: begin
+            set_addr=bram_addr_1[5];
+        end
+        default:
+        set_addr=1'b0;
+        endcase
+    end
     assign transposition_mode_3 = transposition_slect ? 1'b1 : 1'b0;
     assign transposition_mode_4 = transposition_slect ? 1'b0 : 1'b1;
     logic [63:0] data_right_processed;
@@ -239,6 +264,6 @@ module mul_top(
                 .rst_n 	(rst_n  )
             );
     always_comb begin
-            bram_wdata_sb_2 = {sum4, sum3, sum2, sum1};
+            bram_savedata = {sum4, sum3, sum2, sum1};
     end
 endmodule

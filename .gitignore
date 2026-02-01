@@ -2,3 +2,4 @@
 *.vcd
 *.txt
 obj_dir/
+.DS_Store

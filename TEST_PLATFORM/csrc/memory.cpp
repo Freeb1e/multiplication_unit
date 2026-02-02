@@ -25,7 +25,7 @@ static uint8_t* get_ram_info(int bramid, uint32_t* size_out) {
 void pmem_read(int raddr, int bramid, long long* rdata) {
     uint32_t max_size = 0;
     uint8_t* mem = get_ram_info(bramid, &max_size);
-    uint32_t addr = (uint32_t)raddr>>6;
+    uint32_t addr = (uint32_t)raddr>>3;
     addr = addr << 3; // 64-bit aligned
     if (mem == nullptr || (addr + 8 > max_size)) {
         *rdata = 0; 
@@ -50,7 +50,7 @@ void pmem_write(int waddr, int bramid, long long wdata, char wmask) {
     uint32_t max_size = 0;
     uint8_t* mem = get_ram_info(bramid, &max_size);
     
-    uint32_t addr = (uint32_t)waddr>>6;
+    uint32_t addr = (uint32_t)waddr>>3;
     addr = addr << 3; // 64-bit aligned
     uint64_t data = (uint64_t)wdata;
     uint8_t  mask = (uint8_t)wmask;

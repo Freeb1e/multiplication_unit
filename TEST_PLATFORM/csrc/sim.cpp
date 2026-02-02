@@ -90,7 +90,7 @@ void init_SA_test()
         printf("Failed to load B matrix 0 data into HASH RAM.\n");
     }
 }
- // #define AS_TEST
+  //#define AS_TEST
 int main(int argc, char** argv, char** env) {
 
     dut = new Vplatform_top;
@@ -108,8 +108,8 @@ int main(int argc, char** argv, char** env) {
     dut->mem_mode = 0;
     dut->BASE_ADDR_LEFT = 0;
     dut->BASE_ADDR_RIGHT = 0;
-    dut->BASE_ADDR_ADDSRC = 1344*8*8;
-    dut->BASE_ADDR_SAVE = 1344*8*8;
+    dut->BASE_ADDR_ADDSRC = 1344*8;
+    dut->BASE_ADDR_SAVE = 1344*8;
     dut->MATRIX_SIZE = 336;
     tick();
     dut->rst_n = 1;
@@ -125,10 +125,10 @@ int main(int argc, char** argv, char** env) {
     #ifdef AS_TEST
         if(sim_time == 2732){
             dut->calc_init = 1;
-            dut->BASE_ADDR_RIGHT = 1344*8*4;
+            dut->BASE_ADDR_RIGHT = 1344*4;
             dut->BASE_ADDR_LEFT = 0;
-            dut->BASE_ADDR_ADDSRC = 1344*8*8 + 64 ;
-            dut->BASE_ADDR_SAVE = 1344*8*8 + 64 ;
+            dut->BASE_ADDR_ADDSRC = 1344*8 + 8 ;
+            dut->BASE_ADDR_SAVE = 1344*8 + 8 ;
         }
         else if(sim_time == 2735)
             dut->calc_init = 0;
@@ -138,10 +138,10 @@ int main(int argc, char** argv, char** env) {
             // dut->BASE_ADDR_S = 1344*8*4;
             // dut->BASE_ADDR_HASH = 0;
             // dut->BASE_ADDR_B = 1344*8*8 + 1344*16*4;
-            dut ->BASE_ADDR_LEFT = 1344*8*4;
+            dut ->BASE_ADDR_LEFT = 1344*4;
             dut ->BASE_ADDR_RIGHT = 0;
-            dut ->BASE_ADDR_ADDSRC = 1344*8*8 + 1344*16*4;
-            dut ->BASE_ADDR_SAVE = 1344*8*8 + 1344*16*4;
+            dut ->BASE_ADDR_ADDSRC = 1344*8 + 1344*8;
+            dut ->BASE_ADDR_SAVE = 1344*8 + 1344*8;
         }
         else if(sim_time == 2740){
             dut->calc_init = 0;
@@ -149,20 +149,20 @@ int main(int argc, char** argv, char** env) {
         //===============================
                 if(sim_time == 2737*2){
             dut->calc_init = 1;
-            dut->BASE_ADDR_LEFT = 0+32;
-            dut->BASE_ADDR_RIGHT = 1344*16*4;
-            dut->BASE_ADDR_ADDSRC = 1344*8*8 ;
-            dut->BASE_ADDR_SAVE= 1344*8*8 ;
+            dut->BASE_ADDR_LEFT = 0+4;
+            dut->BASE_ADDR_RIGHT = 1344*8;
+            dut->BASE_ADDR_ADDSRC = 1344*8 ;
+            dut->BASE_ADDR_SAVE= 1344*8 ;
         }
         else if(sim_time == 2740*2){
             dut->calc_init = 0;
         }
                 if(sim_time == 2737*3){
             dut->calc_init = 1;
-            dut->BASE_ADDR_LEFT = 1344*8*4+32;
-            dut->BASE_ADDR_RIGHT = 1344*16*4;
-            dut->BASE_ADDR_ADDSRC= 1344*8*8 + 1344*16*4;
-            dut->BASE_ADDR_SAVE= 1344*8*8 + 1344*16*4;
+            dut->BASE_ADDR_LEFT = 1344*4+4;
+            dut->BASE_ADDR_RIGHT = 1344*8;
+            dut->BASE_ADDR_ADDSRC= 1344*8 + 1344*8;
+            dut->BASE_ADDR_SAVE= 1344*8 + 1344*8;
         }
         else if(sim_time == 2740*3){
             dut->calc_init = 0;
